@@ -41,14 +41,15 @@ InstallMethod( FormByMatrix, "for a ffe matrix, a field and a string",
   [IsMatrixOrMatrixObj, IsField and IsFinite, IsString],
   function( m, f, string )
     local el, filt;
-    filt := ConstructingFilter(m);
     if not IsFinite(f) then
       Error("The field must be finite");
     fi;
     if IsMatrix(m) then
       m := ImmutableMatrix(f, m);
+      filt := ConstructingFilter(m);
     else
       Assert(0, BaseDomain(m) = f, "The given matrix must be constructed over the desired field.");
+      filt := ConstructingFilter(m);
       m := Immutable(Matrix(filt, f, m));
     fi;
     el := rec( matrix := m, matrixfilter := filt, basefield := f, type := string);
@@ -86,9 +87,9 @@ InstallMethod( FormByMatrix, "for a ffe matrix, a field and a string",
       fi;
     elif string = "pseudo" then
       if IsOddInt(Size(f)) then
-        Error("No pseudo forms exist in even characteristic" );
+        Error("No pseudo forms exist in even characteristic" ); #TODO IsOdd -> even char?? should probably be IsEvenInt?? 
       fi;
-      if (FORMS_IsSymmetricMatrix(m) and (not FORMS_IsSymplecticMatrix(m))) then
+      if (FORMS_IsSymmetricMatrix(m) and (not FORMS_IsSymplecticMatrix(m, f))) then
         Objectify(NewType( BilinearFormFamily ,  IsFormRep),  el);
         return el;
       else
@@ -116,14 +117,15 @@ InstallMethod( BilinearFormByMatrixOp, "for a ffe matrix and a field",
   function( m, f )
     local el, n, filt;
     n := NrRows(m);
-    filt := ConstructingFilter(m);
     if not IsFinite(f) then
       Error("The field must be finite");
     fi;
     if IsMatrix(m) then
       m := ImmutableMatrix(f, m);
+      filt := ConstructingFilter(m);
     else
       Assert(0, BaseDomain(m) = f, "The given matrix must be constructed over the desired field.");
+      filt := ConstructingFilter(m);
       m := Immutable(Matrix(filt, f, m));
     fi;
     if IsZero(m) then
@@ -131,15 +133,15 @@ InstallMethod( BilinearFormByMatrixOp, "for a ffe matrix and a field",
        Objectify(NewType( TrivialFormFamily ,  IsFormRep),  el);
        return el;
     elif FORMS_IsSymplecticMatrix(m,f) then
-       el := rec( matrix := m, basefield := f, type := "symplectic", vectorspace := FullRowSpace(f,n) );
+       el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "symplectic", vectorspace := FullRowSpace(f,n) );
        Objectify(NewType( BilinearFormFamily ,  IsFormRep),  el);
        return el;
     elif FORMS_IsSymmetricMatrix(m) and Characteristic(f) <> 2 then
-       el := rec( matrix := m, basefield := f, type := "orthogonal", vectorspace := FullRowSpace(f,n) );
+       el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "orthogonal", vectorspace := FullRowSpace(f,n) );
        Objectify(NewType( BilinearFormFamily ,  IsFormRep),  el);
        return el;
     elif FORMS_IsSymmetricMatrix(m) and Characteristic(f) = 2 then
-       el := rec( matrix := m, basefield := f, type := "pseudo", vectorspace := FullRowSpace(f,n) );
+       el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "pseudo", vectorspace := FullRowSpace(f,n) );
        Objectify(NewType( BilinearFormFamily ,  IsFormRep),  el);
        return el;
     else
@@ -197,14 +199,15 @@ InstallMethod( QuadraticFormByMatrixOp, "for a ffe matrix and a field",
   function( m, f )
     local el, n, filt;
     n := NrRows(m);
-    filt := ConstructingFilter(m);
     if not IsFinite(f) then
       Error("The field should be finite");
     fi;
     if IsMatrix(m) then
       m := ImmutableMatrix(f, m);
+      filt := ConstructingFilter(m);
     else
       Assert(0, BaseDomain(m) = f, "The given matrix must be constructed over the desired field.");
+      filt := ConstructingFilter(m);
       m := Immutable(Matrix(filt, f, m));
     fi;
     el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "quadratic", vectorspace := FullRowSpace(f,n) );
@@ -285,10 +288,11 @@ InstallMethod( HermitianFormByMatrix, "for a ffe matrix and a field",
         Error("No hermitian form exists when the order of <f> is not a square" );
     fi;
     if FORMS_IsHermitianMatrix(m,f) then
-      filt := ConstructingFilter(m);
       if IsMatrix(m) then
         m := ImmutableMatrix(f, m);
+        filt := ConstructingFilter(m);
       else
+        filt := ConstructingFilter(m);
         m := Immutable(Matrix(filt, f, m));
       fi;
       el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "hermitian", vectorspace := FullRowSpace(f,n) );
@@ -404,6 +408,8 @@ InstallMethod( GramMatrixByPolynomialForHermitianForm,
 #  <pol> is not suitable to define a bilinear form
 #  zero <pol > is allowed, then the trivial form is returned.
 ##
+
+## TODO this should also take a filter to specify how the form is supposed to be built. The default could be the current behaviour. Needs to set matrixfilter := filt!!!!
 InstallMethod( BilinearFormByPolynomial, "for a polynomial over a field, and a dimension",
   [IsPolynomial, IsFiniteFieldPolynomialRing, IsInt],
   function( pol, pring, n )
@@ -450,6 +456,8 @@ InstallMethod( BilinearFormByPolynomial,  "no dimension",
 #  <pol> is not suitable to define a hermitian form
 #  zero <pol > is allowed, then the trivial form is returned.
 ##
+
+## Same TODO as BilinearFormByPolynomial()
 InstallMethod( HermitianFormByPolynomial, "for a polynomial over a field, and a dimension",
   [IsPolynomial, IsFiniteFieldPolynomialRing, IsInt],
   function(pol, pring, n)
@@ -727,7 +735,7 @@ InstallMethod( RadicalOfForm, "for a trivial form",
     local m, null, gf, d;
     m := f!.matrix;
     gf := f!.basefield;
-    d := Size(m);
+    d := NrRows(m);
     null := NullspaceMat( m );
     return Subspace( gf^d, null, "basis" );
   end );
@@ -737,7 +745,7 @@ InstallMethod( DiscriminantOfForm, [ IsQuadraticForm ],
    local m, gf, d, det, squares, primroot;
    m := f!.matrix;
    gf := f!.basefield;
-   d := Size(m);
+   d := NrRows(m);
    if IsOddInt(d) then
       Error( "Quadratic form must be defined by a matrix of even dimension");
    fi;
@@ -763,7 +771,7 @@ InstallMethod( DiscriminantOfForm, [ IsSesquilinearForm ],
    local m, gf, d, det, squares, primroot;
    m := f!.matrix;
    gf := f!.basefield;
-   d := Size(m);
+   d := NrRows(m);
    if IsOddInt(d) then
       Error( "Sesquilinear form must be defined by a matrix of even dimension");
    fi;
@@ -976,10 +984,8 @@ end );
 InstallMethod( BaseChangeToCanonical, "for a trivial form",
   [IsTrivialForm],
   function(f)
-    local b,m,n;
-    m := f!.matrix;
-    n := NrRows(m);
-    b := IdentityMat(n,m);
+    local b;
+    b := OneMutable(f!.matrix);
     Info(InfoWarning,1,"<form> is trivial, trivial base change is returned");
     return b;
 end );
@@ -1263,14 +1269,25 @@ InstallMethod( ViewObj, [ IsTrivialForm ],
 InstallMethod( PrintObj, [ IsTrivialForm ],
   function( f )
     Print("Trivial form\n");
-    Print("Gram Matrix:\n",f!.matrix,"\n");
+    # Print("Gram Matrix:\n",f!.matrix,"\n");
+    if IsMatrixObj(f!.matrix) then
+      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
+    else
+      Print("Gram Matrix:\n",f!.matrix,"\n");
+    fi;
   end );
 
 InstallMethod( Display, [ IsTrivialForm ],
   function( f )
     Print("Trivial form\n");
     Print("Gram Matrix:\n");
-    Display(f!.matrix);
+
+    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
+    if IsMatrixObj(f!.matrix) then
+      Display(Unpack(f!.matrix));
+    else
+      Display(f!.matrix);
+    fi;
   end);
 
 
@@ -1290,7 +1307,12 @@ InstallMethod( ViewObj, [ IsHermitianForm ],
 InstallMethod( PrintObj, [ IsHermitianForm ],
   function( f )
     Print("Hermitian form\n");
-    Print("Gram Matrix:\n",f!.matrix,"\n");
+    # Print("Gram Matrix:\n",f!.matrix,"\n");
+    if IsMatrixObj(f!.matrix) then
+      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
+    else
+      Print("Gram Matrix:\n",f!.matrix,"\n");
+    fi;
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ", PolynomialOfForm, "\n");
     fi;
@@ -1303,7 +1325,13 @@ InstallMethod( Display, [ IsHermitianForm ],
   function( f )
     Print("Hermitian form\n");
     Print("Gram Matrix:\n");
-    Display(f!.matrix);
+    # Display(f!.matrix);
+    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
+    if IsMatrixObj(f!.matrix) then
+      Display(Unpack(f!.matrix));
+    else
+      Display(f!.matrix);
+    fi;
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ");
        Display(PolynomialOfForm(f));
@@ -1366,7 +1394,12 @@ InstallMethod( PrintObj, [ IsQuadraticForm ],
      Add(string,"Quadratic form\n");
      string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
      Print(string);
-     Print("Gram Matrix:\n",f!.matrix,"\n");
+    #  Print("Gram Matrix:\n",f!.matrix,"\n");
+    if IsMatrixObj(f!.matrix) then
+      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
+    else
+      Print("Gram Matrix:\n",f!.matrix,"\n");
+    fi;
      if HasPolynomialOfForm( f ) then
         Print("Polynomial: ", PolynomialOfForm(f), "\n");
      fi;
@@ -1402,7 +1435,13 @@ InstallMethod( Display,  [ IsQuadraticForm ],
     string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
     Print(string);
     Print("Gram Matrix:\n");
-    Display(f!.matrix);
+    # Display(f!.matrix);
+    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
+    if IsMatrixObj(f!.matrix) then
+      Display(Unpack(f!.matrix));
+    else
+      Display(f!.matrix);
+    fi;
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ");
        Display(PolynomialOfForm(f));
@@ -1494,7 +1533,12 @@ InstallMethod( PrintObj, [ IsBilinearForm ],
     Add(string,"form\n");
     string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
     Print(string);
-    Print("Gram Matrix:\n",f!.matrix,"\n");
+    # Print("Gram Matrix:\n",f!.matrix,"\n");
+    if IsMatrixObj(f!.matrix) then
+      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
+    else
+      Print("Gram Matrix:\n",f!.matrix,"\n");
+    fi;
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ", PolynomialOfForm(f), "\n");
     fi;
@@ -1544,7 +1588,13 @@ InstallMethod( Display, [ IsBilinearForm ],
     string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
     Print(string);
     Print("Gram Matrix:\n");
-    Display(f!.matrix);
+    # Display(f!.matrix);
+    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
+    if IsMatrixObj(f!.matrix) then
+      Display(Unpack(f!.matrix));
+    else
+      Display(f!.matrix);
+    fi;
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ");
        Display(PolynomialOfForm(f));
@@ -1744,11 +1794,13 @@ InstallGlobalFunction(Forms_SQRT2,
     return z^(LogFFE(a,z)/2);
   end );
 
+# updated this to be a row swap.
 InstallGlobalFunction(Forms_PERM_VAR,
-  function(D,r)
+  function(D, r)
     local i;
-    i := Remove(D, r);
-    Add(D, i, 1);
+    for i in [r, r-1 .. 2] do
+      Forms_SwapRows(D, i, i-1);
+    od;
   end );
 
 InstallGlobalFunction(Forms_C1,
@@ -2905,7 +2957,7 @@ InstallMethod( IsometricCanonicalForm, "for bilinear forms",
     isom := B*gram*TransposedMat(B);
     gf := f!.basefield;
     form := BilinearFormByMatrix(isom,gf);
-    trivial := IdentityMat(NrRows(gram),gf);
+    trivial := OneMutable(gram);
     SetBaseChangeToCanonical(form,trivial);
     SetWittIndex(form, WittIndex(f));
     if IsOrthogonalForm(f) then
@@ -2928,7 +2980,7 @@ InstallMethod( IsometricCanonicalForm, "for hermitian forms",
     local gram,gf,B,isom,form,trivial;
     gram := f!.matrix;
     gf := f!.basefield;
-    trivial := IdentityMat(NrRows(gram),gf);
+    trivial := OneMutable(gram);
     B := BaseChangeToCanonical(f);
     isom := B*gram*Forms_HERM_CONJ(B,Sqrt(Size(gf)));
     form := FormByMatrix(isom,gf,"hermitian");
@@ -2948,7 +3000,7 @@ InstallMethod( IsometricCanonicalForm, "for quadratic forms",
     local B,gram,isom,gf,form,trivial;
     gram := GramMatrix(f);
     gf := f!.basefield;
-    trivial := IdentityMat(NrRows(gram),gf);
+    trivial := OneMutable(gram);
     B := BaseChangeToCanonical(f);
     isom := Forms_RESET(B*gram*TransposedMat(B));
     form := FormByMatrix(isom,gf,"quadratic");

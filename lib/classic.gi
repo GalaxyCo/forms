@@ -66,6 +66,11 @@ BindGlobal("Forms_OrthogonalGroup",
     gf:= Forms_FieldOfDefinition( stored, g );
     stored:= stored.matrix;
 
+    # the stored matrix might not be of the same form as the gram matrix of the saved form. We need to convert.
+    if IsMatrixObj(form!.matrix) then
+      stored := Matrix(form!.matrixfilter, gf, stored);
+    fi;
+
     # Check that 'form' lives over the intended field.
     if not IsSubset( gf, form!.basefield ) then
       Error( "the defining field of <form> does not fit to <gf>" );
@@ -92,7 +97,7 @@ BindGlobal("Forms_OrthogonalGroup",
     matinv:= mat^-1;
 
     # Create the group w.r.t. the prescribed form.
-    gens:= List( GeneratorsOfGroup( g ), x -> matinv * x * mat );
+    gens:= List( GeneratorsOfGroup( g ), x -> matinv * x * mat ); # TODO!! mat/matinv can be matrixobjs here but the group gens of g are possibly not. They need to be the same so add Matrix.
     gg:= GroupWithGenerators( gens );
 
     UseIsomorphismRelation( g, gg );
@@ -653,6 +658,11 @@ InstallMethod( GeneralUnitaryGroupCons,
       Error( "the defining field of <form> does not fit to <q>" );
     fi;
 
+    # the stored matrix might not be of the same form as the gram matrix of the saved form. We need to convert.
+    if IsMatrixObj(form!.matrix) then
+      stored := Matrix(form!.matrixfilter, F, stored);
+    fi;
+
     # If the prescribed form fits then just return.
     if stored = form!.matrix then
       return g;
@@ -788,6 +798,11 @@ InstallMethod( SpecialUnitaryGroupCons,
     F:= GF(q^2);
     if not IsSubset( F, form!.basefield ) then
       Error( "the defining field of <form> does not fit to <q>" );
+    fi;
+
+    # the stored matrix might not be of the same form as the gram matrix of the saved form. We need to convert.
+    if IsMatrixObj(form!.matrix) then
+      stored := Matrix(form!.matrixfilter, F, stored);
     fi;
 
     # If the prescribed form fits then just return.
@@ -933,10 +948,15 @@ InstallMethod( SymplecticGroupCons,
       Error( "the defining field of <form> does not fit to <q>" );
     fi;
 
+    # the stored matrix might not be of the same form as the gram matrix of the saved form. We need to convert.
+    if IsMatrixObj(form!.matrix) then
+      stored := Matrix(form!.matrixfilter, F, stored);
+    fi;
+
     # If the prescribed form fits then just return.
     form_matrix:= Matrix( form!.matrix, stored );
-#T This 'Matrix' call should become unnecessary.
-#T For that, the functions used below have to support 'IsMatrixObj' arguments.
+    #T This 'Matrix' call should become unnecessary.
+    #T For that, the functions used below have to support 'IsMatrixObj' arguments. I disagree the problem is that stored is potentially not a matrixobj.
     if stored = form_matrix then
       return g;
     fi;
