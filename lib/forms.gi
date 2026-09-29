@@ -1882,8 +1882,8 @@ InstallMethod( BaseChangeOrthogonalBilinear,
       D := OneMutable(mat);
     else
       D := IdentityMat(n, gf);
-      ConvertToMatrixRep(D, gf); # TODO: Probably same issue as BaseChangeOrthogonalQuadratic investigate!
-      ConvertToMatrixRep(A, gf); #
+      ConvertToMatrixRep(D, gf); 
+      ConvertToMatrixRep(A, gf); 
     fi;
 
     
@@ -2166,7 +2166,8 @@ InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrixOrMatrixObj, IsField and 
       D := OneMutable(mat);
     else
       D := IdentityMat(n, gf);
-      ConvertToMatrixRep(D, gf); # TODO!! This line is from the original implementation, however it results in this always returning a mat obj which in my opinion is not correct behaviour as the returned type of matrix should match the input!
+      ConvertToMatrixRep(D, gf);
+      ConvertToMatrixRep(A, gf);
     fi;
 
     zeros := [];
