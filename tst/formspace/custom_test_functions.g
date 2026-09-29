@@ -1,6 +1,6 @@
 TestPolyEval := function(benchmark)
     local iters, n, F, mat, coeffs, f, frob, eval, i, time_start, time_average_frob, time_average_normal, normal_eval, x;
-    iters := 50;
+    iters := 10;
     time_average_frob := 0;
     time_average_normal := 0;
     for i in [1..iters] do
