@@ -1269,12 +1269,7 @@ InstallMethod( ViewObj, [ IsTrivialForm ],
 InstallMethod( PrintObj, [ IsTrivialForm ],
   function( f )
     Print("Trivial form\n");
-    # Print("Gram Matrix:\n",f!.matrix,"\n");
-    if IsMatrixObj(f!.matrix) then
-      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
-    else
-      Print("Gram Matrix:\n",f!.matrix,"\n");
-    fi;
+    Print("Gram Matrix:\n",f!.matrix,"\n");
   end );
 
 InstallMethod( Display, [ IsTrivialForm ],
@@ -1282,12 +1277,7 @@ InstallMethod( Display, [ IsTrivialForm ],
     Print("Trivial form\n");
     Print("Gram Matrix:\n");
 
-    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
-    if IsMatrixObj(f!.matrix) then
-      Display(Unpack(f!.matrix));
-    else
-      Display(f!.matrix);
-    fi;
+    Display(f!.matrix);
   end);
 
 
@@ -1307,12 +1297,7 @@ InstallMethod( ViewObj, [ IsHermitianForm ],
 InstallMethod( PrintObj, [ IsHermitianForm ],
   function( f )
     Print("Hermitian form\n");
-    # Print("Gram Matrix:\n",f!.matrix,"\n");
-    if IsMatrixObj(f!.matrix) then
-      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
-    else
-      Print("Gram Matrix:\n",f!.matrix,"\n");
-    fi;
+    Print("Gram Matrix:\n",f!.matrix,"\n");
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ", PolynomialOfForm, "\n");
     fi;
@@ -1325,13 +1310,7 @@ InstallMethod( Display, [ IsHermitianForm ],
   function( f )
     Print("Hermitian form\n");
     Print("Gram Matrix:\n");
-    # Display(f!.matrix);
-    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
-    if IsMatrixObj(f!.matrix) then
-      Display(Unpack(f!.matrix));
-    else
-      Display(f!.matrix);
-    fi;
+    Display(f!.matrix);
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ");
        Display(PolynomialOfForm(f));
@@ -1394,12 +1373,7 @@ InstallMethod( PrintObj, [ IsQuadraticForm ],
      Add(string,"Quadratic form\n");
      string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
      Print(string);
-    #  Print("Gram Matrix:\n",f!.matrix,"\n");
-    if IsMatrixObj(f!.matrix) then
-      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
-    else
-      Print("Gram Matrix:\n",f!.matrix,"\n");
-    fi;
+     Print("Gram Matrix:\n",f!.matrix,"\n");
      if HasPolynomialOfForm( f ) then
         Print("Polynomial: ", PolynomialOfForm(f), "\n");
      fi;
@@ -1435,13 +1409,7 @@ InstallMethod( Display,  [ IsQuadraticForm ],
     string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
     Print(string);
     Print("Gram Matrix:\n");
-    # Display(f!.matrix);
-    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
-    if IsMatrixObj(f!.matrix) then
-      Display(Unpack(f!.matrix));
-    else
-      Display(f!.matrix);
-    fi;
+    Display(f!.matrix);
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ");
        Display(PolynomialOfForm(f));
@@ -1533,12 +1501,7 @@ InstallMethod( PrintObj, [ IsBilinearForm ],
     Add(string,"form\n");
     string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
     Print(string);
-    # Print("Gram Matrix:\n",f!.matrix,"\n");
-    if IsMatrixObj(f!.matrix) then
-      Print("Gram Matrix:\n",Unpack(f!.matrix),"\n");
-    else
-      Print("Gram Matrix:\n",f!.matrix,"\n");
-    fi;
+    Print("Gram Matrix:\n",f!.matrix,"\n");
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ", PolynomialOfForm(f), "\n");
     fi;
@@ -1588,13 +1551,7 @@ InstallMethod( Display, [ IsBilinearForm ],
     string := Concatenation(string[1],LowercaseString(Concatenation(string{[2..Length(string)]})));
     Print(string);
     Print("Gram Matrix:\n");
-    # Display(f!.matrix);
-    # added to make displaying forms consistent across classic matrices and matrix objs. Not sure if this change is desired but this made copy and pasting the test files a lot easier.
-    if IsMatrixObj(f!.matrix) then
-      Display(Unpack(f!.matrix));
-    else
-      Display(f!.matrix);
-    fi;
+    Display(f!.matrix);
     if HasPolynomialOfForm( f ) then
        Print("Polynomial: ");
        Display(PolynomialOfForm(f));
