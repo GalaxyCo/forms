@@ -1882,8 +1882,8 @@ InstallMethod( BaseChangeOrthogonalBilinear,
       D := OneMutable(mat);
     else
       D := IdentityMat(n, gf);
-      ConvertToMatrixRep(D, gf);
-      ConvertToMatrixRep(A, gf);
+      ConvertToMatrixRep(D, gf); # TODO: Probably same issue as BaseChangeOrthogonalQuadratic investigate!
+      ConvertToMatrixRep(A, gf); #
     fi;
 
     
@@ -2166,7 +2166,7 @@ InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrixOrMatrixObj, IsField and 
       D := OneMutable(mat);
     else
       D := IdentityMat(n, gf);
-      ConvertToMatrixRep(D, gf);
+      ConvertToMatrixRep(D, gf); # TODO!! This line is from the original implementation, however it results in this always returning a mat obj which in my opinion is not correct behaviour as the returned type of matrix should match the input!
     fi;
 
     zeros := [];
@@ -2238,9 +2238,11 @@ InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrixOrMatrixObj, IsField and 
                   # TODO: Does this case ever occur? I failed to find examples
                   # that trigger it
                   # TODO This might caouse issues with MatObj however hard to test as it does not occur..
-                  perm := PermutationMat((posk,posr,row+1),n);
-                  perm := Matrix(ConstructingFilter(mat), gf, mat);
-                  P := TransposedMat(perm); 
+                  perm := PermutationMat((posk,posr,row+1), n, gf);
+                  if IsMatrixObj(mat) then
+                    perm := Matrix(ConstructingFilter(mat), gf, perm);
+                  fi;
+                  P := TransposedMat(perm);
                   A := P*A*TransposedMat(P);
                   D := P*D;
                else
