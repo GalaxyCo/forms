@@ -467,13 +467,13 @@ end;
 # TODO: optimizations:
 # this function (sometimes) yields a very large formspace 
 # to better recognize forms in this case it would be good to add a function that does not do this (since we only care about non degenerate classical forms). to find a bilinear/symplectic/hermitian form we can just compute a invertibe matrix S such that gS = Sg^{-*} (with frobenius normal form) and hope that S + S^*, S - S^* are also inevertible. Then we have found symmetric/symplectic non degenrate forms This seems like a good idea? idk
-FORMS_CyclicGroupCase := function(Gen, Gen_adjoint_inv_scaled, Lambda, unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, frob_inv_base_change, F, n)
+FORMS_CyclicGroupCase := function(Gen, Gen_adjoint_inv_scaled, Lambdas, unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, frob_inv_base_change, F, n)
     # maybe recoginize the trivial group here as a special case
     local p, mat, outspace, i, j, w, OutForms, W;
 
     outspace := [];
     for p in frob[1] do
-        mat := FORMS_EvaluatePolynomialWithFrobenius(CoefficientsOfUnivariatePolynomial(p), Gen_adjoint_inv_scaled * Lambda, frob_inv_star_scaled, frob_inv_star_base_change, F, n);
+        mat := FORMS_EvaluatePolynomialWithFrobenius(CoefficientsOfUnivariatePolynomial(p), Gen_adjoint_inv_scaled * Lambdas, frob_inv_star_scaled, frob_inv_star_base_change, F, n);
         Add(outspace, FORMS_NullspaceMat(mat));
     od;
     OutForms := [];
@@ -634,12 +634,12 @@ InstallMethod(PreservedFormspace,
         if d = 1 then
             Gen := Gens[1];
             Gen_adjoint := FORMS_CalculateAdjoint(Gen, unitary, hom, n, F);
-            Gen_adjoint_inv_scaled := Lambda[1]*Inverse(Gen_adjoint);
+            Gen_adjoint_inv_scaled := Lambdas[1]*Inverse(Gen_adjoint);
             frob := FrobeniusNormalForm(Gen);
             frob_inv_star_scaled := FrobeniusNormalForm(Gen_adjoint_inv_scaled);
             frob_inv_star_base_change := Inverse(frob_inv_star_scaled[2]);
 
-            return FORMS_CyclicGroupCase(Gen, Gen_adjoint_inv_scaled, Lambda[1], unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, Inverse(frob[2]), F, n);
+            return FORMS_CyclicGroupCase(Gen, Gen_adjoint_inv_scaled, Lambdas[1], unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, Inverse(frob[2]), F, n);
         fi;
         #contains  group element, scalar, (factors of minopol), Basis change to Frobenius (v, vg, vg^2, ...), Frobenius block lengths, number of iterations to compute
         g_res := FORMS_FindCyclicGroupElementAndScalars(Gens, Lambdas, n);

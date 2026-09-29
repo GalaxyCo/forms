@@ -103,7 +103,7 @@ InstallMethod( FormByMatrix, "for a ffe matrix, a field and a string",
 # symplectic, orthogonal, pseudo or hermitian
 ##
 InstallMethod( BilinearFormByMatrixOp, "for a ffe matrix and a field",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite],
+  [IsMatrix and IsFFECollColl, IsField and IsFinite], # to IsMatrixOrMatrixObj
   function( m, f )
     local el, n;
     n := NrRows(m);

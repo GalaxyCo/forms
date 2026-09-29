@@ -53,19 +53,22 @@ The authors,
 
 John Bamberg and Jan De Beule
 
-GAP DAYS TODOs:
+TODOs:
 
-- Fix Bugs with diferent Kinds of Matrices (and add Tests)
-	- added Tests for Matrix objs
-	- do cvec package? 
+Formspace does now support MatrixObj (as far as i can see)
+Currently: Make forms package support matrixobj, Choose default for matrices that are created internally??? MatrixObj vs Lists in Lists? Currently Lists in Lists
+
+- documentation!!!
 - replace old Methods with new formspace ones and update documentation
 - Add Methods:
 	- For random invertible form	
 	- For all forms (possibly this is hard)
 	- Idea with finding all scalars (medium hard lots of work possibly)
 - Go through the code/comments and add some of the ideas
-- Soft rewrite..?
-- actually have the forms package also support MatrixObjs internally this seems like a lot of work, currently i only want to fix the formspace computation to be able to support it, not the Forms objects.
+- Soft rewrite.. ugly code :(
+
+
+
 
 
 

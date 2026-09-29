@@ -22,10 +22,18 @@ fi;
 #     ));
 # FORCE_QUIT_GAP(1);
 
-TestDirectory(DirectoriesPackageLibrary("forms", "tst/formspace"),
+TestDirectory(DirectoriesPackageLibrary("forms", "tst/matobj"),
     rec(
       exitGAP := true,
       exclude := exclude,
       #rewriteToFile := true,  # enable this line to update tests
     ));
 # FORCE_QUIT_GAP(1);
+
+# TestDirectory(DirectoriesPackageLibrary("forms", "tst/formspace"),
+#     rec(
+#       exitGAP := true,
+#       exclude := exclude,
+#       #rewriteToFile := true,  # enable this line to update tests
+#     ));
+# # FORCE_QUIT_GAP(1);
