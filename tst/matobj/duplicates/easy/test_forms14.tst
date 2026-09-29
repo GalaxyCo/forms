@@ -1,5 +1,5 @@
 gap> START_TEST("Forms: matobj/test_forms14.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> q := 5;
 5
 gap> hdim := 3;
@@ -10,19 +10,14 @@ gap> f := GF(q);
 GF(5)
 gap> nzero := List([0..q-2],x->Z(q)^x);
 [ Z(5)^0, Z(5), Z(5)^2, Z(5)^3 ]
-gap> mat := NullMat(2*hdim,2*hdim,f);
-[ [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ] ]
+gap> mat := ToMatObj(NullMat(2*hdim,2*hdim,f), f);
+<6x6-matrix over GF(5)>
 gap> for i in [1..hdim] do
 > entry := Random(nzero);;
-> mat[i][2*hdim-i+1] := entry;
-> mat[2*hdim-i+1][i] := -entry;
+> mat[i,2*hdim-i+1] := entry;
+> mat[2*hdim-i+1,i] := -entry;
 > od;
-gap> form := BilinearFormByMatrix(ToMatObj(mat),f);
+gap> form := BilinearFormByMatrix(mat,f);
 < bilinear form >
 gap> IsAlternatingForm(form);
 true

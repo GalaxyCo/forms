@@ -1,12 +1,8 @@
 gap> START_TEST("Forms: matobj/wittindex.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[0,0,1,0,0],[0,0,0,0,0],[-1,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]*Z(7)^0;
-[ [ 0*Z(7), 0*Z(7), Z(7)^0, 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ], 
-  [ Z(7)^3, 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ] ]
-gap> form := BilinearFormByMatrix(ToMatObj(mat),GF(7));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[0,0,1,0,0],[0,0,0,0,0],[-1,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]*Z(7)^0, GF(7));
+<5x5-matrix over GF(7)>
+gap> form := BilinearFormByMatrix(mat,GF(7));
 < bilinear form >
 gap> WittIndex(form);
 1
@@ -14,25 +10,15 @@ gap> RadicalOfForm(form);
 <vector space of dimension 3 over GF(7)>
 gap> Dimension(last);
 3
-gap> mat := IdentityMat(6,GF(5));
-[ [ Z(5)^0, 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), Z(5)^0, 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), Z(5)^0 ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),GF(5));
+gap> mat := ToMatObj(IdentityMat(6,GF(5)), GF(5));
+<6x6-matrix over GF(5)>
+gap> form := QuadraticFormByMatrix(mat,GF(5));
 < quadratic form >
 gap> WittIndex(form);
 3
-gap> mat := IdentityMat(6,GF(7));
-[ [ Z(7)^0, 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), Z(7)^0, 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), Z(7)^0, 0*Z(7), 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), Z(7)^0, 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), Z(7)^0, 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), Z(7)^0 ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),GF(7));
+gap> mat := ToMatObj(IdentityMat(6,GF(7)), GF(7));
+<6x6-matrix over GF(7)>
+gap> form := QuadraticFormByMatrix(mat,GF(7));
 < quadratic form >
 gap> WittIndex(form);
 2

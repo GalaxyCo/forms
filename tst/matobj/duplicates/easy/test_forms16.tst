@@ -1,19 +1,18 @@
 gap> START_TEST("Forms: matobj/test_forms16.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> q := 5;
 5
 gap> f := GF(q^4);
 GF(5^4)
-gap> mat := NullMat(3,3,f);
-[ [ 0*Z(5), 0*Z(5), 0*Z(5) ], [ 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5) ] ]
-gap> mat[1][2] := Z(q^4);
+gap> mat := ToMatObj(NullMat(3,3,f), GF(q^4));
+<3x3-matrix over GF(5^4)>
+gap> mat[1,2] := Z(q^4);
 Z(5^4)
-gap> mat[2][1] := Z(q^4)^(q^2);
+gap> mat[2,1] := Z(q^4)^(q^2);
 Z(5^4)^25
-gap> mat[3][3] := Z(q)^0;
+gap> mat[3,3] := Z(q)^0;
 Z(5)^0
-gap> form := HermitianFormByMatrix(ToMatObj(mat),GF(q^4));
+gap> form := HermitianFormByMatrix(mat,GF(q^4));
 < hermitian form >
 gap> v := f^3;
 ( GF(5^4)^3 )

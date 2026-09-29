@@ -1,7 +1,7 @@
 gap> START_TEST("Forms: matobj/evalform.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[Z(8),0,0,0],[0,0,Z(8)^4,0],[0,0,0,1],[0,0,0,0]]*Z(8)^0;;
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),GF(8));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[Z(8),0,0,0],[0,0,Z(8)^4,0],[0,0,0,1],[0,0,0,0]]*Z(8)^0, GF(8));;
+gap> form := QuadraticFormByMatrix(mat,GF(8));
 < quadratic form >
 gap> u := [ Z(2^3)^4, Z(2^3)^4, Z(2)^0, Z(2^3)^3 ];
 [ Z(2^3)^4, Z(2^3)^4, Z(2)^0, Z(2^3)^3 ]
@@ -9,9 +9,9 @@ gap> EvaluateForm( form, u );
 Z(2^3)^6
 gap> u^form;
 Z(2^3)^6
-gap> gram := [[0,0,0,0,0,2],[0,0,0,0,2,0],[0,0,0,1,0,0],
->               [0,0,1,0,0,0],[0,2,0,0,0,0],[2,0,0,0,0,0]]*Z(3)^0;;
-gap> form := BilinearFormByMatrix(ToMatObj(gram),GF(3));
+gap> gram := ToMatObj([[0,0,0,0,0,2],[0,0,0,0,2,0],[0,0,0,1,0,0],
+>               [0,0,1,0,0,0],[0,2,0,0,0,0],[2,0,0,0,0,0]]*Z(3)^0, GF(3));;
+gap> form := BilinearFormByMatrix(gram,GF(3));
 < bilinear form >
 gap> u := [ [ Z(3)^0, 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), Z(3)^0 ], 
 >   [ 0*Z(3), 0*Z(3), Z(3)^0, Z(3)^0, Z(3), 0*Z(3) ] ];;

@@ -1,14 +1,10 @@
 gap> START_TEST("Forms: matobj/test_forms3.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> f := GF(8);
 GF(2^3)
-gap> mat := [[Z(8),0*Z(2),0*Z(2),0*Z(2),0*Z(2)],[0*Z(2),Z(2)^0,Z(2^3)^5,0*Z(2),0*Z(2)],[0*Z(2),0*Z(2),0*Z(2),0*Z(2),0*Z(2)],[0*Z(2),0*Z(2),0*Z(2),0*Z(2),Z(2)^0],[0*Z(2),0*Z(2),0*Z(2),0*Z(2),0*Z(2)]];
-[ [ Z(2^3), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), Z(2)^0, Z(2^3)^5, 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),f);
+gap> mat := ToMatObj([[Z(8),0*Z(2),0*Z(2),0*Z(2),0*Z(2)],[0*Z(2),Z(2)^0,Z(2^3)^5,0*Z(2),0*Z(2)],[0*Z(2),0*Z(2),0*Z(2),0*Z(2),0*Z(2)],[0*Z(2),0*Z(2),0*Z(2),0*Z(2),Z(2)^0],[0*Z(2),0*Z(2),0*Z(2),0*Z(2),0*Z(2)]], f);
+<5x5-matrix over GF(2^3)>
+gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> TypeOfForm(form);
 0
@@ -23,20 +19,23 @@ gap> iso := IsometricCanonicalForm(form);
 gap> Display(form);
 Parabolic quadratic form
 Gram Matrix:
-z = Z(8)
- z^1   .   .   .   .
-   .   1 z^5   .   .
-   .   .   .   .   .
-   .   .   .   .   1
-   .   .   .   .   .
+<immutable 5x5-matrix over GF(2^3):
+[[ Z(2^3), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), Z(2)^0, Z(2^3)^5, 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+]>
 Witt Index: 2
 gap> Display(iso);
 Parabolic quadratic form
 Gram Matrix:
- 1 . . . .
- . . 1 . .
- . . . . .
- . . . . 1
- . . . . .
+<immutable 5x5-matrix over GF(2^3):
+[[ Z(2)^0, 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), Z(2)^0, 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+]>
 Witt Index: 2
 gap> STOP_TEST("matobj/test_forms3.tst", 10000 );

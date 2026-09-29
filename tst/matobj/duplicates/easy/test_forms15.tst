@@ -1,5 +1,5 @@
 gap> START_TEST("Forms: matobj/test_forms15.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> q := 5;
 5
 gap> f := GF(q);
@@ -8,13 +8,9 @@ gap> dim := 5;
 5
 gap> v := f^dim;
 ( GF(5)^5 )
-gap> mat := IdentityMat(dim,f);
-[ [ Z(5)^0, 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), Z(5)^0, 0*Z(5) ], 
-  [ 0*Z(5), 0*Z(5), 0*Z(5), 0*Z(5), Z(5)^0 ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),f);
+gap> mat := ToMatObj(IdentityMat(dim,f), f);
+<5x5-matrix over GF(5)>
+gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> lines := Subspaces(v,1);
 Subspaces( ( GF(5)^5 ), 1 )

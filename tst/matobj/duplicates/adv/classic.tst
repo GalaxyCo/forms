@@ -2,7 +2,7 @@
 #@local form, gg, F2, mat
 
 gap> START_TEST( "Forms: matobj/classic.tst" );
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 
 # Test the methods for constructing classical groups w.r.t. prescribed forms,
 # by calling the global functions in the GAP library that delegate to these
@@ -29,7 +29,7 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >          stored:= InvariantQuadraticForm( g ).matrix;
 >          pi:= PermutationMat( (1,2,3), d, F );
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= QuadraticFormByMatrix( ToMatObj(stored), F );
+>          form:= QuadraticFormByMatrix( ToMatObj(stored, F), F );
 >          gg:= GeneralOrthogonalGroup( e, d, q, permmat );
 >          if not ( is_equal( g, GeneralOrthogonalGroup( g ) ) and
 >                   ( is_equal( g, GeneralOrthogonalGroup( stored ) ) or
@@ -60,7 +60,7 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >          stored:= InvariantQuadraticForm( g ).matrix;
 >          pi:= PermutationMat( (1,2,3), d, F );
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= QuadraticFormByMatrix( ToMatObj(stored), F );
+>          form:= QuadraticFormByMatrix( ToMatObj(stored, F), F );
 >          gg:= SpecialOrthogonalGroup( e, d, q, permmat );
 >          if not ( is_equal( g, SpecialOrthogonalGroup( g ) ) and
 >                   ( is_equal( g, SpecialOrthogonalGroup( stored ) ) or
@@ -91,7 +91,7 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >          stored:= InvariantQuadraticForm( g ).matrix;
 >          pi:= PermutationMat( (1,2,3), d, F );
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= QuadraticFormByMatrix( ToMatObj(stored), F );
+>          form:= QuadraticFormByMatrix( ToMatObj(stored, F), F );
 >          gg:= Omega( e, d, q, permmat );
 >          if not ( is_equal( g, Omega( g ) ) and
 >                   ( is_equal( g, Omega( stored ) ) or
@@ -131,7 +131,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >        stored:= InvariantSesquilinearForm( g ).matrix;
 >        pi:= PermutationMat( (1,2), d, F );
 >        permmat:= pi * stored * TransposedMat( pi );
->        form:= HermitianFormByMatrix( ToMatObj(stored), F2 );
+>        form:= HermitianFormByMatrix( ToMatObj(stored, F2), F2 );
 >        gg:= GeneralUnitaryGroup( d, q, permmat );
 >        if not ( is_equal( g, GeneralUnitaryGroup( g ) ) and
 >                 ( is_equal( g, GeneralUnitaryGroup( stored ) ) or
@@ -149,7 +149,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >        stored:= InvariantSesquilinearForm( g ).matrix;
 >        pi:= PermutationMat( (1,2), d, F );
 >        permmat:= pi * stored * TransposedMat( pi );
->        form:= HermitianFormByMatrix( ToMatObj(stored), F2 );
+>        form:= HermitianFormByMatrix( ToMatObj(stored, F2), F2 );
 >        gg:= SpecialUnitaryGroup( d, q, permmat );
 >        if not ( is_equal( g, SpecialUnitaryGroup( g ) ) and
 >                 ( is_equal( g, SpecialUnitaryGroup( stored ) ) or
@@ -191,7 +191,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
 >          fi;
 >          pi:= Matrix( PermutationMat( (1,2), d, F ), stored );
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= BilinearFormByMatrix( ToMatObj(stored), F );
+>          form:= BilinearFormByMatrix( ToMatObj(stored, F), F );
 >          gg:= SymplecticGroup( d, q, permmat );
 >          if filt <> IsPlistRep and not filt( One( gg ) ) then
 >            Error( "wrong repres. of matrices" );
@@ -230,17 +230,17 @@ true
 # Test inconsistent fields of definition.
 gap> g:= GeneralOrthogonalGroup( 5, GF(3) );;
 gap> mat:= InvariantQuadraticForm( g ).matrix;;
-gap> form:= QuadraticFormByMatrix( ToMatObj(mat), GF(9) );;
+gap> form:= QuadraticFormByMatrix( ToMatObj(mat, GF(9)), GF(9) );;
 gap> GeneralOrthogonalGroup( 5, GF(3), form );;
 Error, the defining field of <form> does not fit to <gf>
 gap> g:= GeneralUnitaryGroup( 4, 2 );;
 gap> mat:= InvariantSesquilinearForm( g ).matrix;;
-gap> form:= HermitianFormByMatrix( ToMatObj(mat), GF(16) );;
+gap> form:= HermitianFormByMatrix( ToMatObj(mat, GF(16)), GF(16) );;
 gap> GeneralUnitaryGroup( 4, 2, form );
 Error, the defining field of <form> does not fit to <q>
 gap> g:= SymplecticGroup( 4, GF(2) );;
 gap> mat:= InvariantBilinearForm( g ).matrix;;
-gap> form:= BilinearFormByMatrix( ToMatObj(mat), GF(4) );;
+gap> form:= BilinearFormByMatrix( ToMatObj(mat, GF(4)), GF(4) );;
 gap> SymplecticGroup( 4, GF(2), form );
 Error, the defining field of <form> does not fit to <q>
 

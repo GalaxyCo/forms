@@ -1,15 +1,14 @@
 gap> START_TEST("Forms: matobj/quadformfields.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> mat := 
-> [[Z(2)^0,Z(2)^0,0*Z(2),0*Z(2)],[0*Z(2),Z(2)^0,0*Z(2),0*Z(2)], 
->  [0*Z(2),0*Z(2),0*Z(2),Z(2)^0],[0*Z(2),0*Z(2),0*Z(2),0*Z(2)]];
-[ [ Z(2)^0, Z(2)^0, 0*Z(2), 0*Z(2) ], [ 0*Z(2), Z(2)^0, 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ], [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat));
+> ToMatObj([[Z(2)^0,Z(2)^0,0*Z(2),0*Z(2)],[0*Z(2),Z(2)^0,0*Z(2),0*Z(2)], 
+>  [0*Z(2),0*Z(2),0*Z(2),Z(2)^0],[0*Z(2),0*Z(2),0*Z(2),0*Z(2)]], GF(2));
+<4x4-matrix over GF(2)>
+gap> form := QuadraticFormByMatrix(mat);
 < quadratic form >
 gap> WittIndex(form);
 1
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),GF(4));
+gap> form := QuadraticFormByMatrix(ChangedBaseDomain(mat, GF(4)),GF(4));
 < quadratic form >
 gap> WittIndex(form);
 2

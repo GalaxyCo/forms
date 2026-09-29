@@ -1,9 +1,8 @@
 gap> START_TEST("Forms: matobj/trivialform_prop.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[0,0,0],[0,0,0],[0,0,0]]*Z(11)^0;
-[ [ 0*Z(11), 0*Z(11), 0*Z(11) ], [ 0*Z(11), 0*Z(11), 0*Z(11) ], 
-  [ 0*Z(11), 0*Z(11), 0*Z(11) ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),GF(121));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[0,0,0],[0,0,0],[0,0,0]]*Z(11)^0, GF(121));
+<3x3-matrix over GF(11^2)>
+gap> form := QuadraticFormByMatrix(mat,GF(121));
 < trivial form >
 gap> IsReflexiveForm(form);
 true
@@ -24,8 +23,7 @@ true
 gap> BaseField(form);
 GF(11^2)
 gap> GramMatrix(form);
-[ [ 0*Z(11), 0*Z(11), 0*Z(11) ], [ 0*Z(11), 0*Z(11), 0*Z(11) ], 
-  [ 0*Z(11), 0*Z(11), 0*Z(11) ] ]
+<immutable 3x3-matrix over GF(11^2)>
 gap> RadicalOfForm(form);
 <vector space of dimension 3 over GF(11^2)>
 gap> STOP_TEST("matobj/trivialform_prop.tst", 10000 );

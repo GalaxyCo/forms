@@ -1,5 +1,5 @@
 gap> START_TEST("Forms: matobj/test_forms13.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> q := 9;
 9
 gap> f := GF(q);
@@ -8,10 +8,9 @@ gap> dim := 3;
 3
 gap> v := f^dim;
 ( GF(3^2)^3 )
-gap> mat := IdentityMat(dim,f);
-[ [ Z(3)^0, 0*Z(3), 0*Z(3) ], [ 0*Z(3), Z(3)^0, 0*Z(3) ], 
-  [ 0*Z(3), 0*Z(3), Z(3)^0 ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),f);
+gap> mat := ToMatObj(IdentityMat(dim,f), f);
+<3x3-matrix over GF(3^2)>
+gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> lines := Subspaces(v,1);
 Subspaces( ( GF(3^2)^3 ), 1 )

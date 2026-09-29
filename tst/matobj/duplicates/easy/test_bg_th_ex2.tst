@@ -1,17 +1,18 @@
 gap> START_TEST("Forms: matobj/test_bg_th_ex2.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,-1]]*Z(9)^0;
-[ [ Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3) ], [ 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ], 
-  [ 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3) ], [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3) ] ]
-gap> form := BilinearFormByMatrix(ToMatObj(mat),GF(9));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,-1]]*Z(9)^0, GF(9));
+<4x4-matrix over GF(3^2)>
+gap> form := BilinearFormByMatrix(mat,GF(9));
 < bilinear form >
 gap> Display(form);
 Bilinear form
 Gram Matrix:
- 1 . . .
- . 1 . .
- . . 1 .
- . . . 2
+<immutable 4x4-matrix over GF(3^2):
+[[ Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3) ]
+ [ 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ]
+ [ 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3) ]
+ [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3) ]
+]>
 gap> IsReflexiveForm(form);
 true
 gap> IsSymmetricForm(form);

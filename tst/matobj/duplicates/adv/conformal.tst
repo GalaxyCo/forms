@@ -1,7 +1,7 @@
 #@local ToMatObj, q, F, d, filts, filt, g, stored, pi, permmat, form, gg, pg, sp
 
 gap> START_TEST( "Forms: matobj/conformal.tst" );
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 
 # Test the creation of conformal symplectic groups.
 gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
@@ -26,7 +26,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
 >          fi;
 >          pi:= Matrix( PermutationMat( (1,2), d, F ), stored );
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= BilinearFormByMatrix( ToMatObj(stored), F );
+>          form:= BilinearFormByMatrix( ToMatObj(stored, F), F );
 >          gg:= ConformalSymplecticGroup( d, F, permmat );
 >          if filt <> IsPlistRep and not filt( One( gg ) ) then
 >            Error( "wrong repres. of matrices" );
@@ -70,4 +70,3 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
 
 ##
 gap> STOP_TEST( "Forms: matobj/conformal.tst" );
-

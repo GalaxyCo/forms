@@ -1,9 +1,8 @@
 gap> START_TEST("Forms: matobj/orthogonaltovector.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[0,0,0,-2],[0,0,-3,0],[0,3,0,0],[2,0,0,0]]*Z(7)^0;
-[ [ 0*Z(7), 0*Z(7), 0*Z(7), Z(7)^5 ], [ 0*Z(7), 0*Z(7), Z(7)^4, 0*Z(7) ], 
-  [ 0*Z(7), Z(7), 0*Z(7), 0*Z(7) ], [ Z(7)^2, 0*Z(7), 0*Z(7), 0*Z(7) ] ]
-gap> form := BilinearFormByMatrix(ToMatObj(mat));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[0,0,0,-2],[0,0,-3,0],[0,3,0,0],[2,0,0,0]]*Z(7)^0, GF(7));
+<4x4-matrix over GF(7)>
+gap> form := BilinearFormByMatrix(mat);
 < bilinear form >
 gap> v := [0*Z(7),Z(7)^0,Z(7)^3,Z(7)^5];
 [ 0*Z(7), Z(7)^0, Z(7)^3, Z(7)^5 ]
@@ -18,10 +17,9 @@ gap> subperp := OrthogonalSubspaceMat(form,sub);
 [ [ Z(7)^0, Z(7)^0, 0*Z(7), 0*Z(7) ], [ 0*Z(7), 0*Z(7), Z(7)^4, Z(7)^0 ] ]
 gap> List(subperp,x->List(sub,y->[x,y]^form));
 [ [ 0*Z(7), 0*Z(7) ], [ 0*Z(7), 0*Z(7) ] ]
-gap> mat := [[1,0,0],[0,0,1],[0,0,0]]*Z(2)^0;
-[ [ Z(2)^0, 0*Z(2), 0*Z(2) ], [ 0*Z(2), 0*Z(2), Z(2)^0 ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2) ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat));
+gap> mat := ToMatObj([[1,0,0],[0,0,1],[0,0,0]]*Z(2)^0, GF(2));
+<3x3-matrix over GF(2)>
+gap> form := QuadraticFormByMatrix(mat);
 < quadratic form >
 gap> v := [Z(2)^0,Z(2)^0,0*Z(2)];
 [ Z(2)^0, Z(2)^0, 0*Z(2) ]

@@ -1,19 +1,16 @@
 gap> START_TEST("Forms: matobj/istotallyisotropic.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[1,0,0,0],[0,-1,0,0],[0,0,0,1],[0,0,1,0]]*Z(7)^0;
-[ [ Z(7)^0, 0*Z(7), 0*Z(7), 0*Z(7) ], [ 0*Z(7), Z(7)^3, 0*Z(7), 0*Z(7) ], 
-  [ 0*Z(7), 0*Z(7), 0*Z(7), Z(7)^0 ], [ 0*Z(7), 0*Z(7), Z(7)^0, 0*Z(7) ] ]
-gap> form := BilinearFormByMatrix(ToMatObj(mat));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[1,0,0,0],[0,-1,0,0],[0,0,0,1],[0,0,1,0]]*Z(7)^0, GF(7));
+<4x4-matrix over GF(7)>
+gap> form := BilinearFormByMatrix(mat);
 < bilinear form >
 gap> sub:= [[Z(7)^0,0*Z(7),Z(7)^0,Z(7)],[0*Z(7),Z(7)^0,Z(7)^0,Z(7)^4]];
 [ [ Z(7)^0, 0*Z(7), Z(7)^0, Z(7) ], [ 0*Z(7), Z(7)^0, Z(7)^0, Z(7)^4 ] ]
 gap> IsTotallyIsotropicSubspace(form,sub);
 true
-gap> mat := IdentityMat(6,GF(2));
-[ <a GF2 vector of length 6>, <a GF2 vector of length 6>, 
-  <a GF2 vector of length 6>, <a GF2 vector of length 6>, 
-  <a GF2 vector of length 6>, <a GF2 vector of length 6> ]
-gap> form := HermitianFormByMatrix(ToMatObj(mat),GF(4));
+gap> mat := ToMatObj(IdentityMat(6,GF(2)), GF(4));
+<6x6-matrix over GF(2^2)>
+gap> form := HermitianFormByMatrix(mat,GF(4));
 < hermitian form >
 gap> sub := [[Z(2)^0,0*Z(2),0*Z(2),Z(2)^0,Z(2)^0,Z(2)^0], 
 >   [0*Z(2),Z(2)^0,0*Z(2),Z(2^2)^2,Z(2^2),Z(2)^0], 

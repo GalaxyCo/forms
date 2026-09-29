@@ -1,23 +1,16 @@
 gap> START_TEST("Forms: matobj/isisotropicvector.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> mat := [[1,0,0,0],[0,-1,0,0],[0,0,0,1],[0,0,1,0]]*Z(41)^0;
-[ [ Z(41)^0, 0*Z(41), 0*Z(41), 0*Z(41) ], 
-  [ 0*Z(41), Z(41)^20, 0*Z(41), 0*Z(41) ], 
-  [ 0*Z(41), 0*Z(41), 0*Z(41), Z(41)^0 ], 
-  [ 0*Z(41), 0*Z(41), Z(41)^0, 0*Z(41) ] ]
-gap> form := BilinearFormByMatrix(ToMatObj(mat));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> mat := ToMatObj([[1,0,0,0],[0,-1,0,0],[0,0,0,1],[0,0,1,0]]*Z(41)^0, GF(41));
+<4x4-matrix over GF(41)>
+gap> form := BilinearFormByMatrix(mat);
 < bilinear form >
 gap> v := [1,1,0,0]*Z(41)^0;
 [ Z(41)^0, Z(41)^0, 0*Z(41), 0*Z(41) ]
 gap> IsIsotropicVector(form,v);
 true
-gap> mat := [[1,0,0,0,0],[0,0,0,0,1],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0]]*Z(8)^0;
-[ [ Z(2)^0, 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), Z(2)^0, 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat));
+gap> mat := ToMatObj([[1,0,0,0,0],[0,0,0,0,1],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0]]*Z(8)^0, GF(8));
+<5x5-matrix over GF(2^3)>
+gap> form := QuadraticFormByMatrix(mat);
 < quadratic form >
 gap> v1 := [1,0,0,0,0]*Z(8)^0;
 [ Z(2)^0, 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]

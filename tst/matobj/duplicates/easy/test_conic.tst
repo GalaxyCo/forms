@@ -1,5 +1,5 @@
 gap> START_TEST("Forms: matobj/test_conic.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> gf := GF(8);
 GF(2^3)
 gap> vec := gf^3;
@@ -36,15 +36,15 @@ gap> form = canonical;
 true
 gap> go := GO(3,8);
 GO(0,3,8)
-gap> mat := InvariantQuadraticForm( go )!.matrix;
-[ [ Z(2)^0, 0*Z(2), 0*Z(2) ], [ 0*Z(2), 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), Z(2)^0, 0*Z(2) ] ]
-gap> gapform := QuadraticFormByMatrix( ToMatObj(mat), GF(8) );
+gap> mat := ToMatObj(InvariantQuadraticForm( go )!.matrix, GF(8));
+<3x3-matrix over GF(2^3)>
+gap> gapform := QuadraticFormByMatrix( mat, GF(8) );
 < quadratic form >
 gap> b := BaseChangeToCanonical( gapform );
-[ [ Z(2)^0, 0*Z(2), 0*Z(2) ], [ 0*Z(2), Z(2)^0, 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), Z(2)^0 ] ]
-gap> hom := BaseChangeHomomorphism( b, GF(8) );
+<immutable 3x3-matrix over GF(2^3)>
+
+# GO(3,8) has no matrix-object version in GAP, so the group part stays list-based.
+gap> hom := BaseChangeHomomorphism( Unpack(b), GF(8) );
 ^[ [ Z(2)^0, 0*Z(2), 0*Z(2) ], [ 0*Z(2), Z(2)^0, 0*Z(2) ], 
   [ 0*Z(2), 0*Z(2), Z(2)^0 ] ]
 gap> newgo := Image(hom, go);

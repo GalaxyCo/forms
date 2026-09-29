@@ -1,31 +1,30 @@
 gap> START_TEST("Forms: matobj/test_forms1.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> f := GF(3);;
-gap> gram := [[0,0,0,0,0,2],[0,0,0,0,2,0],[0,0,0,1,0,0],[0,0,1,0,0,0],[0,2,0,0,0,0],[2,0,0,0,0,0]]*Z(3)^0;
-[ [ 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), Z(3) ], 
-  [ 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), Z(3), 0*Z(3) ], 
-  [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ], 
-  [ 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3) ], 
-  [ 0*Z(3), Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ], 
-  [ Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ] ]
-gap> form := BilinearFormByMatrix(ToMatObj(gram),f);
+gap> gram := ToMatObj([[0,0,0,0,0,2],[0,0,0,0,2,0],[0,0,0,1,0,0],[0,0,1,0,0,0],[0,2,0,0,0,0],[2,0,0,0,0,0]]*Z(3)^0, f);
+<6x6-matrix over GF(3)>
+gap> form := BilinearFormByMatrix(gram,f);
 < bilinear form >
 gap> Display(BaseChangeToCanonical(form));
- 1 . 1 1 . 1
- 1 . 2 2 . 1
- 1 2 2 1 . 2
- 2 . 1 2 2 1
- 2 . 1 2 . 1
- . 1 2 1 2 .
+<immutable 6x6-matrix over GF(3):
+[[ Z(3)^0, 0*Z(3), Z(3)^0, Z(3)^0, 0*Z(3), Z(3)^0 ]
+ [ Z(3)^0, 0*Z(3), Z(3), Z(3), 0*Z(3), Z(3)^0 ]
+ [ Z(3)^0, Z(3), Z(3), Z(3)^0, 0*Z(3), Z(3) ]
+ [ Z(3), 0*Z(3), Z(3)^0, Z(3), Z(3), Z(3)^0 ]
+ [ Z(3), 0*Z(3), Z(3)^0, Z(3), 0*Z(3), Z(3)^0 ]
+ [ 0*Z(3), Z(3)^0, Z(3), Z(3)^0, Z(3), 0*Z(3) ]
+]>
 gap> Display(form);
 Hyperbolic bilinear form
 Gram Matrix:
- . . . . . 2
- . . . . 2 .
- . . . 1 . .
- . . 1 . . .
- . 2 . . . .
- 2 . . . . .
+<immutable 6x6-matrix over GF(3):
+[[ 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), Z(3) ]
+ [ 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), Z(3), 0*Z(3) ]
+ [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ]
+ [ 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3) ]
+ [ 0*Z(3), Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
+ [ Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
+]>
 Witt Index: 3
 gap> TypeOfForm(form);
 1

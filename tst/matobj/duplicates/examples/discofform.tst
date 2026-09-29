@@ -1,7 +1,7 @@
 gap> START_TEST("Forms: matobj/discofform.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
-gap> gram := InvariantQuadraticForm(GO(-1,4,5))!.matrix;;
-gap> qform := QuadraticFormByMatrix(ToMatObj(gram), GF(5));
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> gram := ToMatObj(InvariantQuadraticForm(GO(-1,4,5))!.matrix, GF(5));;
+gap> qform := QuadraticFormByMatrix(gram, GF(5));
 < quadratic form >
 gap> DiscriminantOfForm( qform );
 "nonsquare"

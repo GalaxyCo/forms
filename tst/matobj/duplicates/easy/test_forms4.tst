@@ -1,11 +1,10 @@
 gap> START_TEST("Forms: matobj/test_forms4.tst");
-gap> ToMatObj := m -> Matrix(IsPlistMatrixRep, DefaultFieldOfMatrix(m), m);;
+gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> f := GF(8);
 GF(2^3)
-gap> mat := [[Z(8),0,0,0],[0,0,Z(8)^4,0],[0,0,0,1],[0,0,0,0]]*Z(8)^0;
-[ [ Z(2^3), 0*Z(2), 0*Z(2), 0*Z(2) ], [ 0*Z(2), 0*Z(2), Z(2^3)^4, 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ], [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ] ]
-gap> form := QuadraticFormByMatrix(ToMatObj(mat),f);
+gap> mat := ToMatObj([[Z(8),0,0,0],[0,0,Z(8)^4,0],[0,0,0,1],[0,0,0,0]]*Z(8)^0, f);
+<4x4-matrix over GF(2^3)>
+gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> IsSingularForm(form);
 true
@@ -16,19 +15,22 @@ gap> iso := IsometricCanonicalForm(form);
 gap> Display(form);
 Singular parabolic quadratic form
 Gram Matrix:
-z = Z(8)
- z^1   .   .   .
-   .   . z^4   .
-   .   .   .   1
-   .   .   .   .
+<immutable 4x4-matrix over GF(2^3):
+[[ Z(2^3), 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), Z(2^3)^4, 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+]>
 Witt Index: 1
 gap> Display(iso);
 Parabolic quadratic form
 Gram Matrix:
- 1 . . .
- . . 1 .
- . . . .
- . . . .
+<immutable 4x4-matrix over GF(2^3):
+[[ Z(2)^0, 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), Z(2)^0, 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+ [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ]
+]>
 Witt Index: 1
 gap> IsDegenerateForm(iso);
 #I  Testing degeneracy of the *associated bilinear form*
