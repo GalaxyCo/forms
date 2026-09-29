@@ -26,7 +26,7 @@ InstallMethod( \=, "for two forms",
   function( a, b )
     return (a!.basefield = b!.basefield) and
            (a!.type = b!.type) and
-           (a!.matrix = b!.matrix);
+           (a!.matrix = b!.matrix); ## TODO: how to compare forms based on different matrices??
   end );
 
 #############################################################################
@@ -38,11 +38,20 @@ InstallMethod( \=, "for two forms",
 #   A general constructor not for users, not documented.
 ##
 InstallMethod( FormByMatrix, "for a ffe matrix, a field and a string",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite, IsString],
+  [IsMatrixOrMatrixObj, IsField and IsFinite, IsString],
   function( m, f, string )
-    local el;
-    m := ImmutableMatrix(f, m);
-    el := rec( matrix := m, basefield := f, type := string );
+    local el, filt;
+    filt := ConstructingFilter(m);
+    if not IsFinite(f) then
+      Error("The field must be finite");
+    fi;
+    if IsMatrix(m) then
+      m := ImmutableMatrix(f, m);
+    else
+      Assert(0, BaseDomain(m) = f, "The given matrix must be constructed over the desired field.");
+      m := Immutable(Matrix(filt, f, m));
+    fi;
+    el := rec( matrix := m, matrixfilter := filt, basefield := f, type := string);
 
    ## We follow a certain convention, which is outlined in the manual,
    ## in order to determine from a Gram matrix the type of the constructed
@@ -86,7 +95,7 @@ InstallMethod( FormByMatrix, "for a ffe matrix, a field and a string",
         Error("Given matrix does not define a pseudo-form" );
       fi;
     elif string = "quadratic" then
-      el.matrix := ImmutableMatrix(f, Forms_RESET(m));
+      el.matrix := Forms_RESET_immutable(m, f, filt);
       Objectify(NewType( QuadraticFormFamily ,  IsFormRep),  el);
       return el;
     else
@@ -103,13 +112,22 @@ InstallMethod( FormByMatrix, "for a ffe matrix, a field and a string",
 # symplectic, orthogonal, pseudo or hermitian
 ##
 InstallMethod( BilinearFormByMatrixOp, "for a ffe matrix and a field",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite], # to IsMatrixOrMatrixObj
+  [IsMatrixOrMatrixObj, IsField and IsFinite], # to IsMatrixOrMatrixObj
   function( m, f )
-    local el, n;
+    local el, n, filt;
     n := NrRows(m);
-    m := ImmutableMatrix(f, m);
+    filt := ConstructingFilter(m);
+    if not IsFinite(f) then
+      Error("The field must be finite");
+    fi;
+    if IsMatrix(m) then
+      m := ImmutableMatrix(f, m);
+    else
+      Assert(0, BaseDomain(m) = f, "The given matrix must be constructed over the desired field.");
+      m := Immutable(Matrix(filt, f, m));
+    fi;
     if IsZero(m) then
-       el := rec( matrix := m, basefield := f, type := "trivial", vectorspace := FullRowSpace(f,n) );
+       el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "trivial", vectorspace := FullRowSpace(f,n) );
        Objectify(NewType( TrivialFormFamily ,  IsFormRep),  el);
        return el;
     elif FORMS_IsSymplecticMatrix(m,f) then
@@ -139,12 +157,14 @@ InstallMethod( BilinearFormByMatrixOp, "for a ffe matrix and a field",
 # zero matrix is allowed, then the trivial form is returned.
 ##
 InstallMethod( BilinearFormByMatrix, "for a ffe matrix and a field",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite],
+  [IsMatrixOrMatrixObj, IsField and IsFinite],
   function( m, f )
     local gf;
-    gf := DefaultFieldOfMatrix(m);
-    if not PrimitiveElement(gf) in f then
-      Error("<m> is not a matrix over <f>");
+    if IsMatrix(m) then
+      gf := DefaultFieldOfMatrix(m);
+      if not PrimitiveElement(gf) in f then
+        Error("<m> is not a matrix over <f>");
+      fi;
     fi;
     return BilinearFormByMatrixOp( m, f);
 end );
@@ -154,10 +174,14 @@ end );
 # finite field <f> is determined from <m>
 ##
 InstallMethod( BilinearFormByMatrix, "for a ffe matrix ",
-  [IsMatrix and IsFFECollColl ],
+  [IsMatrixOrMatrixObj],
   function( m )
   local f;
-  f := DefaultFieldOfMatrix(m);
+  if IsMatrixObj(m) then
+    f := BaseDomain(m);
+  else
+    f := DefaultFieldOfMatrix(m);
+  fi;
   return BilinearFormByMatrixOp( m, f);
 end );
 
@@ -169,18 +193,27 @@ end );
 # zero matrix is allowed, then the trivial form is returned.
 ##
 InstallMethod( QuadraticFormByMatrixOp, "for a ffe matrix and a field",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite],
+  [IsMatrixOrMatrixObj, IsField and IsFinite],
   function( m, f )
-    local el, n;
+    local el, n, filt;
     n := NrRows(m);
-    m := ImmutableMatrix(f, m);
-    el := rec( matrix := m, basefield := f, type := "quadratic", vectorspace := FullRowSpace(f,n) );
+    filt := ConstructingFilter(m);
+    if not IsFinite(f) then
+      Error("The field should be finite");
+    fi;
+    if IsMatrix(m) then
+      m := ImmutableMatrix(f, m);
+    else
+      Assert(0, BaseDomain(m) = f, "The given matrix must be constructed over the desired field.");
+      m := Immutable(Matrix(filt, f, m));
+    fi;
+    el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "quadratic", vectorspace := FullRowSpace(f,n) );
     if IsZero(m) then
        el.type := "trivial";
        Objectify(NewType( TrivialFormFamily ,  IsFormRep),  el);
        return el;
     else
-       el.matrix := ImmutableMatrix(f, Forms_RESET(m));
+       el.matrix := Forms_RESET_immutable(m, f, filt);
        Objectify(NewType( QuadraticFormFamily ,  IsFormRep),  el);
        return el;
     fi;
@@ -196,12 +229,14 @@ InstallMethod( QuadraticFormByMatrixOp, "for a ffe matrix and a field",
 # zero matrix is allowed.
 ##
 InstallMethod( QuadraticFormByMatrix, "for a ffe matrix and a field",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite],
+  [IsMatrixOrMatrixObj, IsField and IsFinite],
   function( m, f )
     local gf;
-    gf := DefaultFieldOfMatrix(m);
-    if not PrimitiveElement(gf) in f then
-      Error("<m> is not a matrix over <f>");
+    if IsMatrix(m) then
+      gf := DefaultFieldOfMatrix(m);
+      if not PrimitiveElement(gf) in f then
+        Error("<m> is not a matrix over <f>");
+      fi;
     fi;
     return QuadraticFormByMatrixOp( m, f);
 end );
@@ -211,10 +246,14 @@ end );
 # finite field <f> is determined from <m>
 ##
 InstallMethod( QuadraticFormByMatrix, "for a ffe matrix ",
-  [IsMatrix and IsFFECollColl],
+  [IsMatrixOrMatrixObj],
   function( m )
   local f;
-  f := DefaultFieldOfMatrix(m);
+  if IsMatrixObj(m) then
+    f := BaseDomain(m);
+  else
+    f := DefaultFieldOfMatrix(m);
+  fi;
   return QuadraticFormByMatrixOp( m, f);
 end );
 
@@ -227,22 +266,34 @@ end );
 # zero matrix is allowed, then the trivial form is returned.
 ##
 InstallMethod( HermitianFormByMatrix, "for a ffe matrix and a field",
-  [IsMatrix and IsFFECollColl, IsField and IsFinite],
+  [IsMatrixOrMatrixObj, IsField and IsFinite],
   function( m, f )
-    local el,gf,n;
+    local el,gf,n, filt;
     n := NrRows(m);
-    gf := DefaultFieldOfMatrix(m);
-    if not PrimitiveElement(gf) in f then
-      Error("<m> is not a matrix over <f>");
+    if IsMatrix(m) then
+      gf := DefaultFieldOfMatrix(m);
+      if not PrimitiveElement(gf) in f then
+        Error("<m> is not a matrix over <f>");
+      fi;
+    elif IsMatrixObj(m) then
+      gf := BaseDomain(m);
+      if not gf = f then
+        Error("For matrix objects we require that BaseDomain(m) = f (the given field)");
+      fi;
     fi;
     if not IsInt(Sqrt(Size(f))) then
         Error("No hermitian form exists when the order of <f> is not a square" );
     fi;
     if FORMS_IsHermitianMatrix(m,f) then
-       m := ImmutableMatrix(f, m);
-       el := rec( matrix := m, basefield := f, type := "hermitian", vectorspace := FullRowSpace(f,n) );
-       Objectify(NewType( HermitianFormFamily ,  IsFormRep),  el);
-       return el;
+      filt := ConstructingFilter(m);
+      if IsMatrix(m) then
+        m := ImmutableMatrix(f, m);
+      else
+        m := Immutable(Matrix(filt, f, m));
+      fi;
+      el := rec( matrix := m, matrixfilter := filt, basefield := f, type := "hermitian", vectorspace := FullRowSpace(f,n) );
+      Objectify(NewType( HermitianFormFamily ,  IsFormRep),  el);
+      return el;
     else
        Error("Given matrix does not define a hermitian form" );
     fi;
@@ -993,6 +1044,7 @@ InstallMethod( BaseChangeToCanonical, "for a quadratic form",
 # Overloading: Frobenius Automorphisms
 #############################################################################
 
+# TODO: perhaps add this functionality for generic vectors?
 InstallOtherMethod( \^, "for a FFE vector and a Frobenius automorphism",
   [ IsVector and IsFFECollection, IsFrobeniusAutomorphism ],
   function( v, f )
@@ -1135,6 +1187,7 @@ InstallOtherMethod( \^, "for a pair of FFE vectors and a sesquilinear form",
     return pair[1] * f!.matrix * pair[2];
   end );
 
+#TODO this might break stuff, needs matrix obj support??
 InstallOtherMethod( \^, "for a pair of FFE matrices and a sesquilinear form",
   [ IsFFECollCollColl, IsBilinearForm ],
   function( pair, f )
@@ -1157,6 +1210,7 @@ InstallOtherMethod( \^, "for a pair of FFE vectors and an hermitian form",
     return pair[1] * f!.matrix * (pair[2]^frob);
   end );
 
+#TODO this might break stuff, needs matrix obj support??
 InstallOtherMethod( \^, "for a pair of FFE matrices and an hermitian form",
   [ IsFFECollCollColl, IsHermitianForm ],
   function( pair, f )
@@ -1186,7 +1240,7 @@ InstallOtherMethod( \^, "for a FFE vector and a quadratic form",
   end );
 
 InstallOtherMethod( \^, "for a FFE matrix and a quadratic form",
-  [ IsMatrix and IsFFECollColl, IsQuadraticForm ],
+  [ IsMatrixOrMatrixObj, IsQuadraticForm ],
   function( m, f )
     return m * f!.matrix * TransposedMat(m);
   end );
@@ -1664,6 +1718,18 @@ InstallGlobalFunction(Forms_RESET,
     return A;
   end );
 
+InstallGlobalFunction(Forms_RESET_immutable, 
+  function(A, f, filt)
+  local reset_mat;
+  reset_mat := Forms_RESET(A);
+  if IsMatrix(reset_mat) then
+    reset_mat := ImmutableMatrix(f, reset_mat);
+  else
+    reset_mat := Immutable(Matrix(filt, f, reset_mat));
+  fi;
+  return reset_mat;
+end);
+
 InstallGlobalFunction(Forms_SQRT2,
   function(a, gf)
     local z, q;
@@ -1723,7 +1789,7 @@ InstallGlobalFunction(Forms_QUAD_EQ,
 # Operations to check input (most likely not for the user):
 #############################################################################
 
-InstallMethod( FORMS_IsSymplecticMatrix, [IsFFECollColl, IsField],
+InstallMethod( FORMS_IsSymplecticMatrix, [IsMatrixOrMatrixObj, IsField],
   function(m,f)
     local i, j, n;
     # maybe thorw an error if m is not square
@@ -1752,7 +1818,7 @@ InstallMethod( FORMS_IsSymplecticMatrix, [IsFFECollColl, IsField],
     return true;
   end );
 
-InstallMethod( FORMS_IsSymmetricMatrix, [IsFFECollColl],
+InstallMethod( FORMS_IsSymmetricMatrix, [IsMatrixOrMatrixObj],
   function(m)
     local n, i, j;
     n := NrRows(m);
@@ -1767,7 +1833,7 @@ InstallMethod( FORMS_IsSymmetricMatrix, [IsFFECollColl],
     return true;
   end );
 
-InstallMethod( FORMS_IsHermitianMatrix, [IsFFECollColl, IsField],
+InstallMethod( FORMS_IsHermitianMatrix, [IsMatrixOrMatrixObj, IsField],
   function(m,f)
     local p, q, n, i, j;
     if DegreeOverPrimeField(f) mod 2 <> 0 then
@@ -1798,8 +1864,10 @@ InstallMethod( FORMS_IsHermitianMatrix, [IsFFECollColl, IsField],
 #                using r, it follows immediately whether the form is degenerate
 #                w = character (0=elliptic, 2=hyperbolic, 1=parabolic).
 ##
+
+## TODO all of these are probably broken now...
 InstallMethod( BaseChangeOrthogonalBilinear,
-    [ IsMatrix and IsFFECollColl, IsField and IsFinite ],
+    [ IsMatrixOrMatrixObj, IsField and IsFinite ],
   function(mat, gf)
     local row,i,j,k,A,b,c,d,P,D,dummy,r,w,s,v,v1,v2,
           n,q,primroot,one;
@@ -1809,9 +1877,16 @@ InstallMethod( BaseChangeOrthogonalBilinear,
     one := One(gf);
 
     A := MutableCopyMat(mat);
-    ConvertToMatrixRep(A, gf);
-    D := IdentityMat(n, gf);
-    ConvertToMatrixRep(D, gf);
+    if IsMatrixObj(mat) then
+      Assert(0, BaseDomain(mat) = gf, "(internal error) Error field of the matrix object and the given field did not coincide!");
+      D := OneMutable(mat);
+    else
+      D := IdentityMat(n, gf);
+      ConvertToMatrixRep(D, gf);
+      ConvertToMatrixRep(A, gf);
+    fi;
+
+    
     row := 0;
 
     # Diagonalize A
@@ -2075,18 +2150,25 @@ end);
 #                using r, it follows immediately whether the form is degenerate
 #                w = character (0=elliptic, 2=hyperbolic, 1=parabolic).
 ##
-InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrix and IsFFECollColl, IsField and IsFinite ],
+InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrixOrMatrixObj, IsField and IsFinite ],
     function(mat, gf)
     local A,r,w,row,dummy,i,j,h,D,P,t,a,b,c,d,e,s,
-      zeros,posr,posk,n,zero,one;
+      zeros,posr,posk,n,zero,one, perm;
     n := NrRows(mat);
     r := n;
     row := 1;
     zero := Zero(gf);
     one := One(gf);
+
     A := MutableCopyMat(mat);
-    D := IdentityMat(n, gf);
-    ConvertToMatrixRep(D, gf);
+    if IsMatrixObj(mat) then
+      Assert(0, BaseDomain(mat) = gf, "(internal error) Error field of the matrix object and the given field did not coincide!");
+      D := OneMutable(mat);
+    else
+      D := IdentityMat(n, gf);
+      ConvertToMatrixRep(D, gf);
+    fi;
+
     zeros := [];
     for i in [1..n] do
       zeros[i] := zero;
@@ -2155,7 +2237,10 @@ InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrix and IsFFECollColl, IsFie
                elif posr = row + 2 then
                   # TODO: Does this case ever occur? I failed to find examples
                   # that trigger it
-                  P := TransposedMat(PermutationMat((posk,posr,row+1),n));
+                  # TODO This might caouse issues with MatObj however hard to test as it does not occur..
+                  perm := PermutationMat((posk,posr,row+1),n);
+                  perm := Matrix(ConstructingFilter(mat), gf, mat);
+                  P := TransposedMat(perm); 
                   A := P*A*TransposedMat(P);
                   D := P*D;
                else
@@ -2257,7 +2342,6 @@ InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrix and IsFFECollColl, IsFie
     od;
     # Now there can be at most two variables left.
     # Case by case:
-
     if r = row then
        if IsZero(A[row,row]) then
           r := r - 1;
@@ -2350,7 +2434,7 @@ end );
 #                r = number of non zero rows in D*mat*TransposedMat(D)
 #                using r, it follows immediately whether the form is degenerate
 ##
-InstallMethod(BaseChangeHermitian, [ IsMatrix and IsFFECollColl, IsField and IsFinite ],
+InstallMethod(BaseChangeHermitian, [ IsMatrixOrMatrixObj, IsField and IsFinite ],
   function(mat,gf)
     local row,i,j,k,A,a,b,P,D,t,r,n,one,A2,D2;
     n := NrRows(mat);
@@ -2358,9 +2442,15 @@ InstallMethod(BaseChangeHermitian, [ IsMatrix and IsFFECollColl, IsField and IsF
     t := Sqrt(Size(gf));
 
     A := MutableCopyMat(mat);
-    ConvertToMatrixRep(A, gf);
-    D := IdentityMat(n, gf);
-    ConvertToMatrixRep(D, gf);
+    if IsMatrixObj(mat) then
+      Assert(0, BaseDomain(mat) = gf, "(internal error) Error field of the matrix object and the given field did not coincide!");
+      D := OneMutable(mat);
+    else
+      D := IdentityMat(n, gf);
+      ConvertToMatrixRep(A, gf);
+      ConvertToMatrixRep(D, gf);
+    fi;
+
     row := 0;
 
     # Diagonalize A
@@ -2465,7 +2555,7 @@ end );
 #                r = number of non zero rows in D*mat*TransposedMat(D)
 #                using r, the Witt index of the non-degenerate part can be computed.
 ##
-InstallMethod( BaseChangeSymplectic, [IsMatrix and IsFFECollColl, IsField and IsFinite],
+InstallMethod( BaseChangeSymplectic, [IsMatrixOrMatrixObj, IsField and IsFinite],
 
 ## This operation returns an isometry g such that g m g^T is
 ## the alternating form arising from the block diagonal matrix
@@ -2474,9 +2564,15 @@ InstallMethod( BaseChangeSymplectic, [IsMatrix and IsFFECollColl, IsField and Is
  function(m, f)
    local d, basechange, blocknr, diagpos, pos, j, a, b, offset;
    d := NrRows(m);
-   basechange := IdentityMat(d, f);
-   ConvertToMatrixRep(basechange, f);
    m := MutableCopyMat(m);
+    if IsMatrixObj(m) then
+      Assert(0, BaseDomain(m) = f, "(internal error) Error field of the matrix object and the given field did not coincide!");
+      basechange := OneMutable(m);
+    else
+      basechange := IdentityMat(d, f);
+      ConvertToMatrixRep(basechange, f);
+    fi;
+
    for blocknr in [1 .. (Int(d/2))] do
       ## diagpos is the position of the top left corner of the block
       ## on the diagonal of m
@@ -2539,7 +2635,7 @@ InstallMethod( BaseChangeSymplectic, [IsMatrix and IsFFECollColl, IsField and Is
 # Other Operations:
 #############################################################################
 
-InstallMethod( BaseChangeHomomorphism, [ IsMatrix and IsFFECollColl, IsField ],
+InstallMethod( BaseChangeHomomorphism, [ IsMatrixOrMatrixObj, IsField ],
   function( b, gf )
   ## This function returns an intertwiner of the general linear group
   ## induced by changing the basis of its underlying vector space
@@ -2549,7 +2645,7 @@ InstallMethod( BaseChangeHomomorphism, [ IsMatrix and IsFFECollColl, IsField ],
        Error("Matrix is not invertible");
     fi;
     invb := Inverse( b );
-    gl := GeneralLinearGroup(Size(b), gf);
+    gl := GeneralLinearGroup(NrRows(b), gf);
     hom := InnerAutomorphismNC( gl, invb);
     return hom;
   end );
@@ -2900,6 +2996,7 @@ InstallMethod( EvaluateForm, "for an hermitian form and a pair of vectors",
     return v*f!.matrix*(w^frob);
 end );
 
+# TODO fix this for matobj
 InstallMethod( EvaluateForm,  "for an hermitian form and a pair of matrices",
   [IsHermitianForm and IsFormRep, IsFFECollColl, IsFFECollColl],
   function(f,v,w)
@@ -2925,7 +3022,7 @@ end );
 
 InstallMethod( EvaluateForm,
     "for a quadratic form and an FFE matrix",
-    [ IsQuadraticForm, IsMatrix and IsFFECollColl ],
+    [ IsQuadraticForm, IsMatrixOrMatrixObj],
     function(f,m)
         return m * f!.matrix * TransposedMat(m);
     end );
@@ -2975,7 +3072,7 @@ end );
 ##
 InstallMethod(OrthogonalSubspaceMat,
   "for a form and a basis of a subspace",
-  [IsBilinearForm, IsMatrix],
+  [IsBilinearForm, IsMatrixOrMatrixObj],
   function(f,sub)
   local mat,perp;
   mat := f!.matrix;
@@ -3011,7 +3108,7 @@ end );
 ##
 InstallMethod(OrthogonalSubspaceMat,
   "for a form and a basis of a subspace",
-  [IsHermitianForm, IsMatrix],
+  [IsHermitianForm, IsMatrixOrMatrixObj],
   function(f,sub)
   local mat,gf,t,subt;
   mat := f!.matrix;
@@ -3049,7 +3146,7 @@ end );                  #checks
 # associated bilinear form of <form>.
 InstallMethod(OrthogonalSubspaceMat,
   "for a form and a basis of a subspace",
-  [IsQuadraticForm, IsMatrix],
+  [IsQuadraticForm, IsMatrixOrMatrixObj],
   function(f,sub)
   local bilf;
   bilf := AssociatedBilinearForm(f);
@@ -3077,7 +3174,7 @@ end );
 ##
 InstallMethod(IsTotallyIsotropicSubspace,
   "for a form and a basis of a subspace",
-  [IsSesquilinearForm, IsMatrix],
+  [IsSesquilinearForm, IsMatrixOrMatrixObj],
   function(f,sub)
     local mat;
     mat := f!.matrix;
@@ -3113,7 +3210,7 @@ end );
 ##
 InstallMethod(IsTotallyIsotropicSubspace,
   "for a quadratic form and a basis of a subspace",
-  [IsQuadraticForm, IsMatrix],
+  [IsQuadraticForm, IsMatrixOrMatrixObj],
   function(f,sub)
   return IsTotallyIsotropicSubspace(AssociatedBilinearForm(f),sub); #performs dc.
 end );
@@ -3139,11 +3236,11 @@ end );
 ##
 InstallMethod(IsTotallySingularSubspace,
   "for a quadratic form and a basis of a subspace",
-  [IsQuadraticForm, IsMatrix],
+  [IsQuadraticForm, IsMatrixOrMatrixObj],
   function(f,sub)
   local fsub;
   fsub := Filtered(sub,x-> IsZero(x^f));
-  if Length(fsub) <> Length(sub) then
+  if Length(fsub) <> NrRows(sub) then
     return false;
   else
     return IsTotallyIsotropicSubspace(AssociatedBilinearForm(f),sub);
