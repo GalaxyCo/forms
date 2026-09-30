@@ -4,8 +4,9 @@
 #! @Section Computing the Formspace
 #! For details on how the form space is computed SEE: somewhere that does not exist yet
 
-## This wrapper function fixes some compatibilby issues of NullspaceMat with matrix objects. Namely in the case that the matrix is the zero matrix or in the case that the kernel is empty. This ensures that calling NullspaceMat with a matrix object returns a matrix object and calling it with a list matrix returns a list matrix. TODO: Have a destructive variant?? but NullspaceMatDestructive does not seem to work at all for matrix objects at the moment. TODO: Also this is AI Code, so further testing should be done
+## This wrapper function fixes some compatibilby issues of NullspaceMat with matrix objects. Namely in the case that the matrix is the zero matrix or in the case that the kernel is empty. This ensures that calling NullspaceMat with a matrix object returns a matrix object and calling it with a list matrix returns a list matrix. TODO: Also this is AI Code, so further testing should be done ## This can be removed once this issue is closed. https://github.com/issues/created?issue=gap-system%7Cgap%7C6622&issue_global_id=I_kwDOAd0lQM8AAAABTrmFlw
 FORMS_NullspaceMat := function(m)
+    # return NullspaceMat(m);
     local filt, R, n;
     filt := ConstructingFilter(m);
     R := BaseDomain(m);
@@ -120,22 +121,22 @@ FORMS_FindCyclicGroupElementAndScalars := function(Gens, Lambdas, n)
     return Concatenation([best_known_element, best_known_scalar], best_known_res, [runs_max]);
 end;
 
-# turns the (jn) vector vec in F^{jn} and returns a F^{j times n} matrix
-FORMS_VectorReorganize := function(vec, j, F, n)
+# turns the (jn) vector vec in F^{jn} and returns a F^{j times n} matrix, ref is a refrence matrix, used to create the zero Matrix.
+FORMS_VectorReorganize := function(vec, j, F, n, ref)
     local A, i;
-    A := NullMat(j, n, F);
-    # A := ZeroMatrix(F, j, n);
-    # ConvertToMatrixRep(A, F);
+    # A := NullMat(j, n, F); # TODO: here a function that given a vector, makes the correct ascociated matrix is useful
+    A := ZeroMatrix(j, n, ref);
     for i in [1..j] do
         A[i] := vec{[((i - 1) * n + 1)..(i*n)]};
     od;
+
     return A;
 end;
 
-# turns the F^{j times n} matrix into F^{jn} vector
+# turns the F^{j times n} matrix into F^{jn} vectorargument
 FORMS_MatrixReorganize := function(mat, j, F, n)
     local vec, i;
-    vec := ZeroVector(F, j*n);
+    vec := ZeroVector(F, j*n); ## TODO: here a function that given a matrix makes the correct vector type is useful
     for i in [1..j] do
         vec{[((i - 1) * n + 1)..(i*n)]} := mat[i];
     od;
@@ -143,7 +144,7 @@ FORMS_MatrixReorganize := function(mat, j, F, n)
 end;
 
 # given j times n matrices over field F, this tries to compute a linear combination of the matrices such that their sum is zero.
-# TODO: maybe make this funciton more efficient by only considereing some vectors, a better optimatizion however, would be to not even generate the unused equations
+# TODO: maybe make this function more efficient by only considereing some vectors, a better optimatizion however, would be to not even generate the unused equations
 FORMS_SolveMatrixSystem := function(mats, j, n, F)
     local eqs, mat, sol, out;
     eqs := [];
@@ -157,18 +158,14 @@ end;
 FORMS_FrobSpin := function(Images, spin_elem, frob_base_blocks, n, F)
     local A, j, i, k, end_pos, Images_lists, v;
     j := Size(frob_base_blocks);
-    if IsPlistMatrixRep(spin_elem) then
-        A := ZeroMatrix(IsPlistMatrixRep, F, n, n);
-    else
-        A := NullMat(n, n, F);
-    fi;
-    Images_lists := List(Images, function(v)
-        if IsPlistVectorRep(v) then
-            return Unpack(v);
-        fi;
-        return v;
-    end);
-    CopySubMatrix(Images_lists, A, [1..j], frob_base_blocks, [1..n], [1..n]);
+    A := ZeroMutable(spin_elem);
+    # Images_lists := List(Images, function(v)
+    #     if IsPlistVectorRep(v) then
+    #         return Unpack(v);
+    #     fi;
+    #     return v;
+    # end);
+    CopySubMatrix(Images, A, [1..j], frob_base_blocks, [1..n], [1..n]);
     for i in [1..j] do
         if i = j then
             end_pos := n;
@@ -191,10 +188,12 @@ end;
 # Evaluates the univariate polynomial p (given as coefficients) in the matrix g \in F^{n\times n}. frob_base = FrobeniusNormalForm(g) must be satisfied and frob_base_inv = Inverse(FrobeniusNormalForm(g)[2]). The reason these two parameters are given, and not computed in the function itself is to not compute FrobeniusNormalForm(g) multiple times when evaluating multiple polynomials in g.
 FORMS_EvaluatePolynomialWithFrobenius := function(p, g, frob_base, frob_base_inv, F, n) 
     local ws, C, i, end_pos, j, k;
-    ws := [];
     j := Size(frob_base[3]);
+    ws := ZeroMatrix(j, n, g);
     for k in [1..j] do
-        Add(ws, FORMS_EvaluateMatrixPolynomialWithVector(F, n, g, frob_base[2][frob_base[3][k]]{[1..n]}, p));
+        ws[j] := FORMS_EvaluateMatrixPolynomialWithVector(F, n, g, frob_base[2][frob_base[3][k]]{[1..n]}, p);
+        # Add(ws, FORMS_EvaluateMatrixPolynomialWithVector(F, n, g, frob_base[2][frob_base[3][k]]{[1..n]}, p)); #function(F, n, g, v, coeffs)
+        # Print(aa);
     od;
     C := FORMS_FrobSpin(ws, g, frob_base[3], n, F);
     # TODO: this function is used to build the condition matrices, however since we are only interested in the kernels of these matrices and C is an invertible matrix we can probably eliminate this multiplication and do it at a later stage?
@@ -208,11 +207,7 @@ FORMS_ComputeConditionMatrixFrob := function(u, h, h_star, scalar_h, g_star_inv_
     coeffs_c := (u * h) * frob_base_inv;
     coeffs_f := (u * frob_base_inv) * scalar_h;
     j := Size(frob_base[3]);
-    if IsPlistMatrixRep(h) then
-        Ps := ZeroMatrix(IsPlistMatrixRep, F, n*j, n);
-    else
-        Ps := NullMat(n * j, n, F);
-    fi;
+    Ps := ZeroMatrix(n*j, n, h);
    
     for i in [1..j] do
         if i = j then
@@ -221,11 +216,13 @@ FORMS_ComputeConditionMatrixFrob := function(u, h, h_star, scalar_h, g_star_inv_
             b_end := frob_base[3][i + 1] - 1;
         fi;
         
-        # Ps{[((i - 1)*n + 1)..(i*n)]}{[1..n]} :=
-        #     FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - 
-        #     FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
-        mat := FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
-        CopySubMatrix(mat, Ps, [1..n], [((i - 1)*n + 1)..(i*n)], [1..n], [1..n]);
+        Ps{[((i - 1)*n + 1)..(i*n)]}{[1..n]} :=
+            FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - 
+            FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
+        # Print(aa);
+        # mat := FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
+        
+        # CopySubMatrix(mat, Ps, [1..n], [((i - 1)*n + 1)..(i*n)], [1..n], [1..n]);
     od;
     return Ps;
 end;
@@ -234,11 +231,7 @@ end;
 FORMS_FrobSpinAtBlock := function(Image, spin_elem, frob_base_blocks, block_index, n, F)
     local A, j, i, k, end_pos;
     j := Size(frob_base_blocks);
-    if IsPlistMatrixRep(spin_elem) then
-        A := ZeroMatrix(IsPlistMatrixRep, F, n, n);
-    else
-        A := NullMat(n, n, F);
-    fi;
+    A := ZeroMutable(spin_elem);
     if block_index = j then
         end_pos := n;
     else
@@ -469,7 +462,7 @@ end;
 # to better recognize forms in this case it would be good to add a function that does not do this (since we only care about non degenerate classical forms). to find a bilinear/symplectic/hermitian form we can just compute a invertibe matrix S such that gS = Sg^{-*} (with frobenius normal form) and hope that S + S^*, S - S^* are also inevertible. Then we have found symmetric/symplectic non degenrate forms This seems like a good idea? idk
 FORMS_CyclicGroupCase := function(Gen, Gen_adjoint_inv_scaled, Lambdas, unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, frob_inv_base_change, F, n)
     # maybe recoginize the trivial group here as a special case
-    local p, mat, outspace, i, j, w, OutForms, W;
+    local p, mat, outspace, i, j, w, OutForms, W, nrsol, k;
 
     outspace := [];
     for p in frob[1] do
@@ -479,10 +472,12 @@ FORMS_CyclicGroupCase := function(Gen, Gen_adjoint_inv_scaled, Lambdas, unitary,
     OutForms := [];
     for i in [1..Size(outspace)] do
         W := outspace[i];
-        if IsPlistMatrixRep(W) and IsRowListMatrix(W) then
-            W := List(W);
-        fi;
-        for w in W do
+        # if IsPlistMatrixRep(W) and IsRowListMatrix(W) then
+        #     W := List(W);
+        # fi;
+        nrsol := NrRows(W);
+        for k in [1..nrsol] do
+            w := W[k];
             Add(OutForms, frob_inv_base_change * FORMS_FrobSpinAtBlock(w, Gen_adjoint_inv_scaled, frob[3], i, n, F)); # this can be used to bound the rank very cheaply, it is smaller than the lenght of the ith frobenius block, furthermore we use the different frobenius blocks, to build a non-deg form we should use a form from each block and add them??
         od;
     od;
@@ -492,24 +487,27 @@ end;
 
 # builds the forms from image vectors and frobenius normal forms and so on, might needs to check if the forms are actually preserved forms
 FORMS_ReturnFormspace := function(needs_checking, W, g_res, g_star_inv_scaled, Lambdas, unitary, hom, Gens, d, F, g_inv_frob, n)
-    local O, w, A, i;
+    local O, w, A, i, nrsol, k;
     # no kernel, return empty
     O := [];
     # to enumerate over the matrix rows, we turn into a list
-    if IsPlistMatrixRep(W) and IsRowListMatrix(W) then
-        W := List(W);
-    fi;
-    for w in W do
-        A := g_inv_frob * FORMS_FrobSpin(FORMS_VectorReorganize(w, Size(g_res[5]), F, n), g_star_inv_scaled, g_res[5], n, F);
+    # if IsPlistMatrixRep(W) and IsRowListMatrix(W) then
+    #     W := List(W);
+    # fi;
+    nrsol := NrRows(W);
+    for k in [1..nrsol] do
+        w := W[k];
+        A := g_inv_frob * FORMS_FrobSpin(FORMS_VectorReorganize(w, Size(g_res[5]), F, n, g_inv_frob), g_star_inv_scaled, g_res[5], n, F);
         if needs_checking then
             for i in [1..d] do
                 #todo: store adjoints so they do not have to be reused!
                 if Gens[i] * A * FORMS_CalculateAdjoint(Gens[i], unitary, hom, n, F) <> Lambdas[i] * A then
-                    if Size(W) = 1 then
+                    if nrsol = 1 then
                         return []; #one dimensional case no further computation needed
                     fi;
                     return false;
                 fi;
+                # Print(aa);
             od;
             Add(O, A);
         else
@@ -536,7 +534,7 @@ FORMS_FormspaceInternal := function(Gens, Lambdas, unitary, hom, g_res, g_inv_fr
             vec := g_res[4][j];
             Conds := 
                 FORMS_ComputeConditionMatrixFrob(vec, h, h_star, Lambdas[i], g_star_inv_scaled, g_star_inv_scaled_frob, g_inv_frob, frob_base_inv_star, F, n);
-            
+            # Print(aa);
             if not first then
                 nspace := FORMS_NullspaceMat(W * Conds);
                 nspace_size := Length(nspace);
