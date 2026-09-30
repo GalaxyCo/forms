@@ -191,7 +191,7 @@ FORMS_EvaluatePolynomialWithFrobenius := function(p, g, frob_base, frob_base_inv
     j := Size(frob_base[3]);
     ws := ZeroMatrix(j, n, g);
     for k in [1..j] do
-        ws[j] := FORMS_EvaluateMatrixPolynomialWithVector(F, n, g, frob_base[2][frob_base[3][k]]{[1..n]}, p);
+        ws[k] := FORMS_EvaluateMatrixPolynomialWithVector(F, n, g, frob_base[2][frob_base[3][k]]{[1..n]}, p);
         # Add(ws, FORMS_EvaluateMatrixPolynomialWithVector(F, n, g, frob_base[2][frob_base[3][k]]{[1..n]}, p)); #function(F, n, g, v, coeffs)
         # Print(aa);
     od;
@@ -216,13 +216,12 @@ FORMS_ComputeConditionMatrixFrob := function(u, h, h_star, scalar_h, g_star_inv_
             b_end := frob_base[3][i + 1] - 1;
         fi;
         
-        Ps{[((i - 1)*n + 1)..(i*n)]}{[1..n]} :=
-            FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - 
-            FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
+        # Ps{[((i - 1)*n + 1)..(i*n)]}{[1..n]} :=
+        #     FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
         # Print(aa);
-        # mat := FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
+        mat := FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
         
-        # CopySubMatrix(mat, Ps, [1..n], [((i - 1)*n + 1)..(i*n)], [1..n], [1..n]);
+        CopySubMatrix(mat, Ps, [1..n], [((i - 1)*n + 1)..(i*n)], [1..n], [1..n]);
     od;
     return Ps;
 end;
