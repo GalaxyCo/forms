@@ -1066,7 +1066,7 @@ InstallMethod( BaseChangeToCanonical, "for a quadratic form",
 # Overloading: Frobenius Automorphisms
 #############################################################################
 
-## TODO: all the methods \^ have the issue that it is not fairly clear what they do to the input if it is mutable or immutable. I have decided to make the convention that this will always return a new copy of the object that is immutable if the input is immuable and mutable if it is not. Another todo would be to perhaps add methodology to perform this operation inplace with mutable objects.
+## TODO: all the methods \^ have the issue that it is not fairly clear what they do to the if input is mutable or immutable. Another todo would be to perhaps add methodology to perform these operation inplace with mutable objects.
 
 # the method for the most general case should always work and return the correct vector type
 InstallOtherMethod( \^, "for a FFE vector object and a Frobenius automorphism",
