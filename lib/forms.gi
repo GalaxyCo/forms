@@ -1066,10 +1066,27 @@ InstallMethod( BaseChangeToCanonical, "for a quadratic form",
 # Overloading: Frobenius Automorphisms
 #############################################################################
 
-# TODO: perhaps add this functionality for generic vectors?
+## TODO: all the methods \^ have the issue that it is not fairly clear what they do to the input if it is mutable or immutable. I have decided to make the convention that this will always return a new copy of the object that is immutable if the input is immuable and mutable if it is not. Another todo would be to perhaps add methodology to perform this operation inplace with mutable objects.
+
+# the method for the most general case should always work and return the correct vector type
+InstallOtherMethod( \^, "for a FFE vector object and a Frobenius automorphism",
+  [ IsVectorObj, IsFrobeniusAutomorphism ],
+  function( v, f )
+    local w, i;
+    w := ShallowCopy(v);
+    for i in [ 1 .. Length(w) ] do
+      w[i] := w[i]^f;
+    od;
+    return w;
+  end );
+
+
 InstallOtherMethod( \^, "for a FFE vector and a Frobenius automorphism",
   [ IsVector and IsFFECollection, IsFrobeniusAutomorphism ],
   function( v, f )
+    if IsVectorObj(v) then # TODO this stupid to always return a list if it is a vector object. Another method would probably be to change the filters somehow, but i am no expert on that and this seems fairly future proof.
+      TryNextMethod();
+    fi;
     return List(v,x->x^f);
   end );
 
@@ -1184,13 +1201,6 @@ InstallOtherMethod( \^, "for a FFE matrix object and a trivial Frobenius automor
     return m;
   end );
 
-InstallOtherMethod( \^, "for a FFE vector object and a Frobenius automorphism",
-  [ IsVectorObj, IsFrobeniusAutomorphism ],
-  function( v, f )
-    return NewVector( ConstructingFilter(v), BaseDomain(v),
-                      List( Unpack(v), x -> x^f ) );
-  end );
-
 InstallOtherMethod( \^, "for a FFE vector object and a trivial Frobenius automorphism",
   [ IsVectorObj, IsMapping and IsOne ],
   function( v, f )
@@ -1199,6 +1209,19 @@ InstallOtherMethod( \^, "for a FFE vector object and a trivial Frobenius automor
 #############################################################################
 # Overloading: Forms
 #############################################################################
+
+# to make evaluating pairs possible with vector objects. AI Code..
+InstallOtherMethod( \^, "for a pair of FFE vector objects and a sesquilinear form",
+  [ IsList, IsBilinearForm ],
+  function( pair, f )
+    if not ForAll( pair, IsVectorObj ) then
+      TryNextMethod(); # TODO: not sure if having this chek is a good idea, maybe this should throw an error instead?? Do we require this consistency?? idk also see hermitian and quadratic form methods
+    fi;
+    if Length(pair) <> 2 then
+      Error("The first argument must be a pair of vectors");
+    fi;
+    return pair[1] * f!.matrix * pair[2];
+  end );
 
 InstallOtherMethod( \^, "for a pair of FFE vectors and a sesquilinear form",
   [ IsVectorList and IsFFECollColl, IsBilinearForm ],
@@ -1209,7 +1232,35 @@ InstallOtherMethod( \^, "for a pair of FFE vectors and a sesquilinear form",
     return pair[1] * f!.matrix * pair[2];
   end );
 
-#TODO this might break stuff, needs matrix obj support??
+InstallOtherMethod( \^, "for a pair of FFE matrix objects and a sesquilinear form",
+  [ IsList, IsBilinearForm ],
+  function( pair, f )
+    if not ForAll( pair, IsMatrixObj ) then
+      TryNextMethod();
+    fi;
+    if Length(pair) <> 2 then
+      Error("The first argument must be a pair of matrices");
+    fi;
+    return pair[1] * f!.matrix * TransposedMat(pair[2]);
+  end );
+
+InstallOtherMethod( \^, "for a pair of FFE matrix objects and an hermitian form",
+  [ IsList, IsHermitianForm ],
+  function( pair, f )
+    local frob, hh, bf;
+    if not ForAll( pair, IsMatrixObj ) then
+      TryNextMethod();
+    fi;
+    if Length(pair) <> 2 then
+      Error("The first argument must be a pair of matrices");
+    fi;
+    bf := f!.basefield;
+    hh := DegreeOverPrimeField(bf) / 2;
+    frob := FrobeniusAutomorphism(bf)^hh;
+    return pair[1] * f!.matrix * (TransposedMat(pair[2])^frob);
+  end );
+
+#TODO for some reason this object also gets called if one has a list containing generic matrix objects??? very confusing to me. In order to make sure this does not break in future i have elected to add a method without this filter anyways. These methods should exist for IsBilinearForm and IsHermitianForm and IsTrivialForm. These methods can be found above this todo. Also ai slop warning.
 InstallOtherMethod( \^, "for a pair of FFE matrices and a sesquilinear form",
   [ IsFFECollCollColl, IsBilinearForm ],
   function( pair, f )
@@ -1217,6 +1268,23 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and a sesquilinear form",
        Error("The first argument must be a pair of vectors");
     fi;
     return pair[1] * f!.matrix * TransposedMat(pair[2]);
+  end );
+
+# TODO: same as bilinear form method and IsTrivialForm method for pairs (also AI)
+InstallOtherMethod( \^, "for a pair of FFE vector objects and an hermitian form",
+  [ IsList, IsHermitianForm ],
+  function( pair, f )
+    local frob, hh, bf;
+    if not ForAll( pair, IsVectorObj ) then
+      TryNextMethod();
+    fi;
+    if Length(pair) <> 2 then
+      Error("The first argument must be a pair of vectors");
+    fi;
+    bf := f!.basefield;
+    hh := DegreeOverPrimeField(bf) / 2;
+    frob := FrobeniusAutomorphism(bf)^hh;
+    return pair[1] * f!.matrix * (pair[2]^frob);
   end );
 
 InstallOtherMethod( \^, "for a pair of FFE vectors and an hermitian form",
@@ -1232,7 +1300,6 @@ InstallOtherMethod( \^, "for a pair of FFE vectors and an hermitian form",
     return pair[1] * f!.matrix * (pair[2]^frob);
   end );
 
-#TODO this might break stuff, needs matrix obj support??
 InstallOtherMethod( \^, "for a pair of FFE matrices and an hermitian form",
   [ IsFFECollCollColl, IsHermitianForm ],
   function( pair, f )
@@ -1244,6 +1311,20 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and an hermitian form",
     hh := DegreeOverPrimeField(bf) / 2;
     frob := FrobeniusAutomorphism(bf)^hh;
     return pair[1] * f!.matrix * (TransposedMat(pair[2])^frob);
+  end );
+
+# TODO: same change as the pair method with IsBilinear and IsHermitian 
+InstallOtherMethod( \^, "for a pair of FFE matrices and a trivial form", 
+  [ IsList, IsTrivialForm ],
+  function( pair, f )
+    # TODO: this does also not change the field but i have elcected that this is fine for now.
+    if not ForAll( pair, IsVectorObj ) then
+      TryNextMethod(); 
+    fi;
+    if Size(pair) <> 2 then
+       Error("The first argument must be a pair of vectors or a vector");
+    fi;
+    return Zero(BaseField(f));
   end );
 
 InstallOtherMethod( \^, "for a pair of FFE matrices and a trivial form", #new in 1.2.1
@@ -1261,15 +1342,28 @@ InstallOtherMethod( \^, "for a FFE vector and a quadratic form",
     return v * f!.matrix * v;
   end );
 
+InstallOtherMethod( \^, "for a FFE vector object and a quadratic form",
+  [ IsVectorObj, IsQuadraticForm ],
+  function( v, f )
+    return v * f!.matrix * v;
+  end );
+
 InstallOtherMethod( \^, "for a FFE matrix and a quadratic form",
   [ IsMatrixOrMatrixObj, IsQuadraticForm ],
   function( m, f )
     return m * f!.matrix * TransposedMat(m);
   end );
 
-InstallOtherMethod( \^, "for a FFE vector and a quadratic form", #new in 1.2.1
-  [ IsVector and IsFFECollection, IsTrivialForm ],
+# TODO: having stuff like this could introduce weird behaviour where the field of the vector is not even finite. however i have elected to leave it at this for now.
+InstallOtherMethod( \^, "for a vector and a trivial form", 
+  [ IsVectorObj, IsTrivialForm ],
   function( m, f )
+    return Zero(BaseField(f));
+  end );
+
+InstallOtherMethod( \^, "for a FFE vector and a trivial form",
+  [ IsVector and IsFFECollection, IsTrivialForm ],
+  function( v, f )
     return Zero(BaseField(f));
   end );
 
@@ -3267,7 +3361,12 @@ InstallMethod(IsTotallySingularSubspace,
   [IsQuadraticForm, IsMatrixOrMatrixObj],
   function(f,sub)
   local fsub;
-  fsub := Filtered(sub,x-> IsZero(x^f));
+  # TODO: Here an issue can occur with the matrixobjects, as then the vectors given out from sub are not necessarily Vectors compatible with the Matrix Objects. This boils down to the fact that i have not adapted the \^ operation to allow forms that are internally represented with matrix objects to be multiplied with lists. Rather I am waiting on the gap systems core decision if this behaviour should be allowed or not, so that the forms package behaves accordingly.
+  if IsMatrix(f!.matrix) then
+    fsub := Filtered(sub,x-> IsZero(x^f));
+  else
+    fsub := Filtered(sub,x-> IsZero(Vector(x, f!.matrix[1])^f));
+  fi;
   if Length(fsub) <> NrRows(sub) then
     return false;
   else

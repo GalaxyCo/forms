@@ -27,10 +27,10 @@ gap> lines := Subspaces(v,1);
 Subspaces( ( GF(5)^6 ), 1 )
 gap> matrices := List(lines,x->BasisVectors(Basis(x)));;
 gap> vectors := List(matrices,x->x[1]);;
-gap> results := Collected(List(vectors,x->EvaluateForm(form,x,x)));;
+gap> results := Collected(List(vectors,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
 gap> [Zero(f),(q^dim-1)/(q-1)] in results;
 true
-gap> results := Collected(List(matrices,x->EvaluateForm(form,x,x)));;
+gap> results := Collected(List(matrices,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
 gap> [[[Zero(f)]],(q^dim-1)/(q-1)] in results;
 true
 gap> Number(vectors,x->IsIsotropicVector(form,x))=(q^dim-1)/(q-1);
@@ -40,21 +40,21 @@ true
 gap> planes := Subspaces(v,2);
 Subspaces( ( GF(5)^6 ), 2 )
 gap> matrices := List(planes,x->BasisVectors(Basis(x)));;
-gap> results := Collected(List(matrices,x->EvaluateForm(form,x,x)));;
+gap> results := Collected(List(matrices,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
 gap> z := Zero(f);
 0*Z(5)
 gap> [[[z,z],[z,z]],(q^2+1)*(q^6-1)/(q-1)] in results;
 true
-gap> Number(matrices,x->IsTotallyIsotropicSubspace(form,x))=(q^2+1)*(q^6-1)/(q-1);
+gap> Number(matrices,x->IsTotallyIsotropicSubspace(form,Vector(x, GramMatrix(form)[1])))=(q^2+1)*(q^6-1)/(q-1);
 true
 gap> threespaces := Subspaces(v,3);
 Subspaces( ( GF(5)^6 ), 3 )
 gap> matrices := List(lines,x->BasisVectors(Basis(x)));;
-gap> results := Collected(List(matrices,x->EvaluateForm(form,x,x)));;
+gap> results := Collected(List(matrices,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
 gap> z := Zero(f);
 0*Z(5)
 gap> [[[Zero(f)]],(q^3+1)*(q^2+q+1)] in results;
 true
-gap> Number(matrices,x->IsTotallyIsotropicSubspace(form,x))=(q^3+1)*(q^2+q+1);
+gap> Number(matrices,x->IsTotallyIsotropicSubspace(form,Vector(x, GramMatrix(form)[1])))=(q^3+1)*(q^2+q+1);
 true
 gap> STOP_TEST("matobj/test_forms14.tst", 10000 );

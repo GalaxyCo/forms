@@ -20,10 +20,10 @@ gap> lines := Subspaces(v,1);
 Subspaces( ( GF(5^4)^3 ), 1 )
 gap> matrices := List(lines,x->BasisVectors(Basis(x)));;
 gap> vectors := List(matrices,x->x[1]);;
-gap> results := Collected(List(vectors,x->EvaluateForm(form,x,x)));;
+gap> results := Collected(List(vectors,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
 gap> [Zero(f),q^6+1] in results;
 true
-gap> results := Collected(List(matrices,x->EvaluateForm(form,x,x)));;
+gap> results := Collected(List(matrices,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
 gap> [[[Zero(f)]],q^6+1] in results;
 true
 gap> Number(vectors,x->IsIsotropicVector(form,x))=q^6+1;
