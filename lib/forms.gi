@@ -597,7 +597,12 @@ InstallMethod( PolynomialOfForm, "for a quadratic form",
     d := NrRows(m);
     r := PolynomialRing(gf,d);
     indets := IndeterminatesOfPolynomialRing(r);
-    poly := indets * m * indets;
+    ## TODO: this is not a nice fix, sort of depends on https://github.com/gap-system/gap/issues/6643
+    if IsMatrix(m) then
+      poly := indets * m * indets;
+    else
+      poly := indets * Unpack(m) * indets;
+    fi;
     return poly;
   end );
 
@@ -613,7 +618,13 @@ InstallMethod( PolynomialOfForm, "for a hermitian form",
     d := NrRows(m);
     r := PolynomialRing(gf,d);
     indets := IndeterminatesOfPolynomialRing(r);
-    poly := indets * m * List(indets,t->t^q);
+    ## TODO: this is not a nice fix, sort of depends on https://github.com/gap-system/gap/issues/6643
+    if IsMatrix(m) then
+      poly := indets * m * List(indets,t->t^q);
+    else
+      poly := indets * Unpack(m) * List(indets,t->t^q);
+    fi;
+    
     return poly;
   end );
 
@@ -634,7 +645,12 @@ InstallMethod( PolynomialOfForm, "for a bilinear form",
     fi;
     r := PolynomialRing(gf,d);
     indets := IndeterminatesOfPolynomialRing(r);
-    poly := indets * m * indets;
+    ## TODO: this is not a nice fix, sort of depends on https://github.com/gap-system/gap/issues/6643
+    if IsMatrix(m) then
+      poly := indets * m * indets;
+    else
+      poly := indets * Unpack(m) * indets;
+    fi;
     return poly;
   end );
 
