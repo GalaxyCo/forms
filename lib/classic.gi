@@ -60,7 +60,7 @@ end );
 
 BindGlobal("Forms_OrthogonalGroup",
     function( g, form )
-    local stored, gf, d, wanted, mat1, mat2, mat, matinv, gens, gg;
+    local stored, gf, d, wanted, mat1, mat2, mat, matinv, gens, gg, formmat;
 
     stored:= InvariantQuadraticForm( g );
     gf:= Forms_FieldOfDefinition( stored, g );
@@ -77,7 +77,8 @@ BindGlobal("Forms_OrthogonalGroup",
     fi;
 
     # If the prescribed form fits then just return.
-    if stored = form!.matrix then
+    # TODO: this is wasteful right now, but the group g has matrices that does not match g so it should be rebuild. This however might be slow. A better solution would be to have a nice function that can just convert all the matrices and so forth of a group into the right representation.
+    if stored = form!.matrix and not IsMatrixObj(form!.matrix) then
       return g;
     fi;
 
@@ -96,8 +97,13 @@ BindGlobal("Forms_OrthogonalGroup",
     mat:= mat2^-1 * mat1;
     matinv:= mat^-1;
 
+    gens := GeneratorsOfGroup( g );
+
+    if IsMatrixObj(form!.matrix) then
+      gens := List(gens, x -> Matrix(x, mat));
+    fi;
     # Create the group w.r.t. the prescribed form.
-    gens:= List( GeneratorsOfGroup( g ), x -> matinv * x * mat ); # TODO!! mat/matinv can be matrixobjs here but the group gens of g are possibly not. They need to be the same so add Matrix.
+    gens:= List(gens, x -> matinv * x * mat );
     gg:= GroupWithGenerators( gens );
 
     UseIsomorphismRelation( g, gg );
@@ -113,7 +119,13 @@ BindGlobal("Forms_OrthogonalGroup",
           IsFullSubgroupGLorSLRespectingQuadraticForm( g ) );
     fi;
 
-    mat:= matinv * InvariantBilinearForm( g ).matrix * TransposedMat( matinv );
+    formmat := InvariantBilinearForm( g ).matrix;
+
+    if IsMatrixObj(form!.matrix) then
+      formmat := Matrix(formmat, mat); 
+    fi;
+
+    mat:= matinv * formmat * TransposedMat( matinv );
     SetInvariantBilinearForm( gg, rec( matrix:= mat, baseDomain:= gf ) );
     if Characteristic( gf ) <> 2 and
        HasIsFullSubgroupGLorSLRespectingBilinearForm( g ) then

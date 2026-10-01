@@ -1,8 +1,10 @@
 #@local ToMatObj, is_equal, q, F, d, es, e, g, filters, filt, stored, pi, permmat
 #@local form, gg, F2, mat
 
+
+gap> filt:=IsGenericMatrixRep;;
 gap> START_TEST( "Forms: matobj/classic.tst" );
-gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
+gap> ToMatObj := {m, F} -> Matrix(filt, F, m);;
 
 # Test the methods for constructing classical groups w.r.t. prescribed forms,
 # by calling the global functions in the GAP library that delegate to these
@@ -25,11 +27,11 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >        fi;
 >        for e in es do
 >          # GO(e,d,q)
->          g:= GeneralOrthogonalGroup( e, d, q );
+>          g:= TestForceMatrixObjGens(GeneralOrthogonalGroup( e, d, q ), filt);
 >          stored:= InvariantQuadraticForm( g ).matrix;
->          pi:= PermutationMat( (1,2,3), d, F );
+>          pi:= ToMatObj(PermutationMat( (1,2,3), d, F ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= QuadraticFormByMatrix( ToMatObj(stored, F), F );
+>          form:= QuadraticFormByMatrix( stored, F );
 >          gg:= GeneralOrthogonalGroup( e, d, q, permmat );
 >          if not ( is_equal( g, GeneralOrthogonalGroup( g ) ) and
 >                   ( is_equal( g, GeneralOrthogonalGroup( stored ) ) or
@@ -56,11 +58,11 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >            fi;
 >          fi;
 >          # SO(e,d,q)
->          g:= SpecialOrthogonalGroup( e, d, q );
+>          g:= TestForceMatrixObjGens(SpecialOrthogonalGroup( e, d, q ), filt);
 >          stored:= InvariantQuadraticForm( g ).matrix;
->          pi:= PermutationMat( (1,2,3), d, F );
+>          pi:= ToMatObj(PermutationMat( (1,2,3), d, F ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= QuadraticFormByMatrix( ToMatObj(stored, F), F );
+>          form:= QuadraticFormByMatrix( stored, F );
 >          gg:= SpecialOrthogonalGroup( e, d, q, permmat );
 >          if not ( is_equal( g, SpecialOrthogonalGroup( g ) ) and
 >                   ( is_equal( g, SpecialOrthogonalGroup( stored ) ) or
@@ -87,11 +89,11 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >            fi;
 >          fi;
 >          # Omega(e,d,q)
->          g:= Omega( e, d, q );
+>          g:= TestForceMatrixObjGens(Omega( e, d, q ), filt);
 >          stored:= InvariantQuadraticForm( g ).matrix;
->          pi:= PermutationMat( (1,2,3), d, F );
+>          pi:= ToMatObj(PermutationMat( (1,2,3), d, F ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= QuadraticFormByMatrix( ToMatObj(stored, F), F );
+>          form:= QuadraticFormByMatrix( stored, F );
 >          gg:= Omega( e, d, q, permmat );
 >          if not ( is_equal( g, Omega( g ) ) and
 >                   ( is_equal( g, Omega( stored ) ) or
@@ -127,11 +129,11 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >      F2:= GF(q^2);
 >      for d in [ 2 .. 8 ] do
 >        # GU(d,q)
->        g:= GeneralUnitaryGroup( d, q );
+>        g:= TestForceMatrixObjGens(GeneralUnitaryGroup( d, q ), filt);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
->        pi:= PermutationMat( (1,2), d, F );
+>        pi:= ToMatObj(PermutationMat( (1,2), d, F ), F);
 >        permmat:= pi * stored * TransposedMat( pi );
->        form:= HermitianFormByMatrix( ToMatObj(stored, F2), F2 );
+>        form:= HermitianFormByMatrix( stored, F2 );
 >        gg:= GeneralUnitaryGroup( d, q, permmat );
 >        if not ( is_equal( g, GeneralUnitaryGroup( g ) ) and
 >                 ( is_equal( g, GeneralUnitaryGroup( stored ) ) or
@@ -145,11 +147,11 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >          Error( "problem with GU(", d, ",", q, ")" );
 >        fi;
 >        # SU(d,q)
->        g:= SpecialUnitaryGroup( d, q );
+>        g:= TestForceMatrixObjGens(SpecialUnitaryGroup( d, q ), filt);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
 >        pi:= PermutationMat( (1,2), d, F );
 >        permmat:= pi * stored * TransposedMat( pi );
->        form:= HermitianFormByMatrix( ToMatObj(stored, F2), F2 );
+>        form:= HermitianFormByMatrix( stored, F2 );
 >        gg:= SpecialUnitaryGroup( d, q, permmat );
 >        if not ( is_equal( g, SpecialUnitaryGroup( g ) ) and
 >                 ( is_equal( g, SpecialUnitaryGroup( stored ) ) or

@@ -232,13 +232,53 @@ TestListList := function(m)
     return a;
 end;
 
-TestForceMatrixObjGens := function(G)
-    local Gens, i, F;
-    Gens := ShallowCopy(GeneratorsOfGroup(G));
-    for i in [1..Size(Gens)] do
-        F := DefaultFieldOfMatrix(Gens[i]);
-        Gens[i] := Matrix(IsPlistMatrixRep, F, TestListList(Gens[i]));
+# AI SLOP!! WARNING. Pretty much tries to implement what i suggested in issue https://github.com/gap-system/gap/issues/6632
+TestForceMatrixObjGens := function(G, filt)
+    local F, conv, H, attr, r;
+    F := DefaultFieldOfMatrixGroup(G);
+    conv := m -> Matrix(filt, F, TestListList(m));
+    H := GroupWithGenerators(List(GeneratorsOfGroup(G), conv), conv(One(G)));
+    # invariant forms: copy the record, convert the matrix
+    for attr in [ InvariantBilinearForm, InvariantQuadraticForm,
+                  InvariantSesquilinearForm ] do
+        if Tester(attr)(G) then
+            r := ShallowCopy(attr(G));
+            r.matrix := conv(r.matrix);
+            Setter(attr)(H, r);
+        fi;
     od;
-    return Group(Gens);
+    # properties that select the fast membership methods
+    for attr in [ IsFullSubgroupGLorSLRespectingBilinearForm,
+                  IsFullSubgroupGLorSLRespectingQuadraticForm,
+                  IsFullSubgroupGLorSLRespectingSesquilinearForm ] do
+        if Tester(attr)(G) then
+            Setter(attr)(H, attr(G));
+        fi;
+    od;
+    if HasSize(G) then SetSize(H, Size(G)); fi;
+    if HasName(G) then SetName(H, Name(G)); fi;
+    return H;
 end;
+TestForceMatrixObjGensDefault := G -> TestForceMatrixObjGens(G, IsGenericMatrixRep); # Changing this to IsPlistMatrixRep is also interesting for the tests.
+
+# TestForceMatrixObjGens := function(G)
+#     local Gens, i, F;
+#     Gens := ShallowCopy(GeneratorsOfGroup(G));
+#     for i in [1..Size(Gens)] do
+#         F := DefaultFieldOfMatrix(Gens[i]);
+#         Gens[i] := Matrix(IsPlistMatrixRep, F, TestListList(Gens[i]));
+#     od;
+#     return Group(Gens);
+# end;
+
+# # uses fun to convert the matrices
+# TestForceMatrixObjGens := function(G, filt)
+#     local Gens, i, F;
+#     Gens := ShallowCopy(GeneratorsOfGroup(G));
+#     for i in [1..Size(Gens)] do
+#         F := DefaultFieldOfMatrix(Gens[i]);
+#         Gens[i] := Matrix(filt, F, TestListList(Gens[i]));
+#     od;
+#     return Group(Gens);
+# end;
 
