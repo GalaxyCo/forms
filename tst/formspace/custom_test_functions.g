@@ -234,7 +234,7 @@ end;
 
 # AI SLOP!! WARNING. Pretty much tries to implement what i suggested in issue https://github.com/gap-system/gap/issues/6632
 TestForceMatrixObjGens := function(args...)
-    local F, conv, H, attr, r, G, filt;
+    local F, conv, H, attr, r, G, filt, nice;
     G := args[1];
     if Size(args) = 1 then
         #filt := IsGenericMatrixRep; # currently breaks everything, for example issue https://github.com/gap-packages/nofoma/issues/103
@@ -262,12 +262,18 @@ TestForceMatrixObjGens := function(args...)
             Setter(attr)(H, attr(G));
         fi;
     od;
+
     if HasSize(G) then SetSize(H, Size(G)); fi;
     if HasName(G) then SetName(H, Name(G)); fi;
+
+    # Reuse the nice monomorphism of the original group, so that membership tests in H do not have to compute one for matrix objects. Workaround for https://github.com/gap-system/gap/issues/6670; remove once that is fixed. If this was not here the classic.tst would take forever on the matrixobj version.
+    nice := NiceMonomorphism(G);
+    SetNiceMonomorphism(H, GroupHomomorphismByFunction(H, Image(nice),
+        x -> ImagesRepresentative(nice, Unpack(x)),
+        p -> conv(PreImagesRepresentative(nice, p))));
+
     return H;
 end;
-
-
 # TestForceMatrixObjGens := function(G)
 #     local Gens, i, F;
 #     Gens := ShallowCopy(GeneratorsOfGroup(G));

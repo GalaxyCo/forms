@@ -676,7 +676,7 @@ InstallMethod( GeneralUnitaryGroupCons,
     fi;
 
     # If the prescribed form fits then just return.
-    if stored = form!.matrix then
+    if stored = form!.matrix and not IsMatrixObj(form!.matrix) then
       return g;
     fi;
 
@@ -693,7 +693,11 @@ InstallMethod( GeneralUnitaryGroupCons,
     matinv:= mat^-1;
 
     # Create the group w.r.t. the prescribed form.
-    gens:= List( GeneratorsOfGroup( g ), x -> matinv * x * mat );
+    gens := GeneratorsOfGroup( g );
+    if IsMatrixObj( form!.matrix ) then
+      gens:= List( gens, x -> Matrix( x, mat ) );
+    fi;
+    gens:= List( gens, x -> matinv * x * mat );
     gg:= GroupWithGenerators( gens );
 
     UseIsomorphismRelation( g, gg );
@@ -818,7 +822,7 @@ InstallMethod( SpecialUnitaryGroupCons,
     fi;
 
     # If the prescribed form fits then just return.
-    if stored = form!.matrix then
+    if stored = form!.matrix and not IsMatrixObj(form!.matrix) then
       return g;
     fi;
 
@@ -835,7 +839,11 @@ InstallMethod( SpecialUnitaryGroupCons,
     matinv:= mat^-1;
 
     # Create the group w.r.t. the prescribed form.
-    gens:= List( GeneratorsOfGroup( g ), x -> matinv * x * mat );
+    gens := GeneratorsOfGroup( g );
+    if IsMatrixObj( form!.matrix ) then
+      gens:= List( gens, x -> Matrix( x, mat ) );
+    fi;
+    gens:= List( gens, x -> matinv * x * mat );
     gg:= GroupWithGenerators( gens );
 
     UseIsomorphismRelation( g, gg );

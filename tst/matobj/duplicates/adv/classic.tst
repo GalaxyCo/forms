@@ -1,6 +1,4 @@
-#@local ToMatObj, is_equal, q, F, d, es, e, g, filters, filt, stored, pi, permmat
-#@local form, gg, F2, mat
-
+#@local ToMatObj, is_equal, q, F, d, es, e, g, filters, filt, stored, pi, permmat, is_sub, form, gg, F2, mat
 
 gap> filt := IsPlistMatrixRep;; #filt:=IsGenericMatrixRep;; is currently broken as row access with M[i] is not allowed and some random function is broken for that reason. I think it is RankMat that is broken and i wrote an issue on this already.
 gap> START_TEST( "Forms: matobj/classic.tst" );
@@ -10,13 +8,32 @@ gap> ToMatObj := {m, F} -> Matrix(filt, F, m);;
 # by calling the global functions in the GAP library that delegate to these
 # methods.  Thus we also test these functions.
 
-# Provide an auxiliary function (until GAP's '=' gets fast).
-gap> is_equal:= function( G1, G2 )
->      return IsSubset( G1, GeneratorsOfGroup( G2 ) ) and
->             IsSubset( G2, GeneratorsOfGroup( G1 ) );
+# Provide an auxiliary function (until GAP's '=' gets fast). this has gotten really complicated in oreder that gap does not do a million computations and the test is horribly slow. 
+# Workaround for https://github.com/gap-system/gap/issues/6670
+# membership tests in groups with matrix object generators can fail in the MeatAxe, so compare plain-list copies. THIS IS greatly assited by ai TODO this test still fails, which is releated to issue https://github.com/gap-system/gap/issues/6671
+gap> is_sub:= function( G, l )
+>      local up, P;
+>      if HasNiceMonomorphism( G ) or
+>         ForAny( [ IsFullSubgroupGLorSLRespectingBilinearForm,
+>                   IsFullSubgroupGLorSLRespectingQuadraticForm,
+>                   IsFullSubgroupGLorSLRespectingSesquilinearForm ],
+>                 p -> Tester( p )( G ) and p( G ) ) then
+>        return IsSubset( G, l );
+>      fi;
+>      up:= function( x )
+>        if IsPlistRep( x ) then
+>          return x;
+>        fi;
+>        return Unpack( x );
+>      end;
+>      P:= GroupWithGenerators( List( GeneratorsOfGroup( G ), up ) );
+>      if HasSize( G ) then
+>        SetSize( P, Size( G ) );
+>      fi;
+>      return IsSubset( P, List( l, up ) );
 >    end;;
-
-# Test the creation of orthogonal groups.
+gap> is_equal:= { G1, G2 } -> is_sub( G1, GeneratorsOfGroup( G2 ) ) and
+>                             is_sub( G2, GeneratorsOfGroup( G1 ) );;# Test the creation of orthogonal groups.
 gap> for q in [ 2, 3, 4, 5, 8 ] do
 >      F:= GF(q);
 >      for d in [ 3 .. 5 ] do
@@ -43,8 +60,8 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >                   is_equal( g, GeneralOrthogonalGroup( e, d, F, g ) ) and
 >                   is_equal( g, GeneralOrthogonalGroup( e, d, F, stored ) ) and
 >                   is_equal( g, GeneralOrthogonalGroup( e, d, F, form ) ) and
->                   IsSubset( gg, GeneratorsOfGroup( gg ) ) and
->                   IsSubset( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
+>                   is_sub( gg, GeneratorsOfGroup( gg ) ) and
+>                   is_sub( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
 >            Error( "problem with GO(", e, ",", d, ",", q, ")" );
 >          fi;
 >          if e = 0 then
@@ -74,8 +91,8 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >                   is_equal( g, SpecialOrthogonalGroup( e, d, F, g ) ) and
 >                   is_equal( g, SpecialOrthogonalGroup( e, d, F, stored ) ) and
 >                   is_equal( g, SpecialOrthogonalGroup( e, d, F, form ) ) and
->                   IsSubset( gg, GeneratorsOfGroup( gg ) ) and
->                   IsSubset( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
+>                   is_sub( gg, GeneratorsOfGroup( gg ) ) and
+>                   is_sub( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
 >            Error( "problem with SO(", e, ",", d, ",", q, ")" );
 >          fi;
 >          if e = 0 then
@@ -105,8 +122,8 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >                   is_equal( g, Omega( e, d, F, g ) ) and
 >                   is_equal( g, Omega( e, d, F, stored ) ) and
 >                   is_equal( g, Omega( e, d, F, form ) ) and
->                   IsSubset( gg, GeneratorsOfGroup( gg ) ) and
->                   IsSubset( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
+>                   is_sub( gg, GeneratorsOfGroup( gg ) ) and
+>                   is_sub( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
 >            Error( "problem with Omega(", e, ",", d, ",", q, ")" );
 >          fi;
 >          if e = 0 then
@@ -131,7 +148,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >        # GU(d,q)
 >        g:= TestForceMatrixObjGens(GeneralUnitaryGroup( d, q ), filt);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
->        pi:= ToMatObj(PermutationMat( (1,2), d, F ), F);
+>        pi:= ToMatObj(PermutationMat( (1,2), d, F ), F2);
 >        permmat:= pi * stored * TransposedMat( pi );
 >        form:= HermitianFormByMatrix( stored, F2 );
 >        gg:= GeneralUnitaryGroup( d, q, permmat );
@@ -142,14 +159,14 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >                 is_equal( g, GeneralUnitaryGroup( d, q, g ) ) and
 >                 is_equal( g, GeneralUnitaryGroup( d, q, stored ) ) and
 >                 is_equal( g, GeneralUnitaryGroup( d, q, form ) ) and
->                 IsSubset( gg, GeneratorsOfGroup( gg ) ) and
->                 IsSubset( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
+>                 is_sub( gg, GeneratorsOfGroup( gg ) ) and
+>                 is_sub( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
 >          Error( "problem with GU(", d, ",", q, ")" );
 >        fi;
 >        # SU(d,q)
 >        g:= TestForceMatrixObjGens(SpecialUnitaryGroup( d, q ), filt);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
->        pi:= PermutationMat( (1,2), d, F );
+>        pi:= ToMatObj(PermutationMat( (1,2), d, F ), F2);
 >        permmat:= pi * stored * TransposedMat( pi );
 >        form:= HermitianFormByMatrix( stored, F2 );
 >        gg:= SpecialUnitaryGroup( d, q, permmat );
@@ -160,8 +177,8 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >                 is_equal( g, SpecialUnitaryGroup( d, q, g ) ) and
 >                 is_equal( g, SpecialUnitaryGroup( d, q, stored ) ) and
 >                 is_equal( g, SpecialUnitaryGroup( d, q, form ) ) and
->                 IsSubset( gg, GeneratorsOfGroup( gg ) ) and
->                 IsSubset( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
+>                 is_sub( gg, GeneratorsOfGroup( gg ) ) and
+>                 is_sub( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
 >          Error( "problem with SU(", d, ",", q, ")" );
 >        fi;
 >      od;
@@ -208,8 +225,8 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
 >                   is_equal( g, SymplecticGroup( d, F, g ) ) and
 >                   is_equal( g, SymplecticGroup( d, F, stored ) ) and
 >                   is_equal( g, SymplecticGroup( d, F, form ) ) and
->                   IsSubset( gg, GeneratorsOfGroup( gg ) ) and
->                   IsSubset( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
+>                   is_sub( gg, GeneratorsOfGroup( gg ) ) and
+>                   is_sub( g, List( GeneratorsOfGroup( gg ), x -> x^pi ) ) ) then
 >            Error( "problem with Sp(", d, ",", q, ") for ", filt );
 >          fi;
 > 
