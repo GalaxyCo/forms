@@ -858,7 +858,7 @@ end);
 ##    returns a scalar. Is this somewhere used?
 ##
 ## To do: see if the check function can get this name and/or be merged with this function.
-InstallMethod( ScalarOfSimilarity, [IsMatrix, IsSesquilinearForm],
+InstallMethod( ScalarOfSimilarity, [IsMatrixOrMatrixObj, IsSesquilinearForm],
   function( g, form )
 
     ## Recall that a similarity of a form f on V, is a linear transformation g
@@ -874,8 +874,8 @@ InstallMethod( ScalarOfSimilarity, [IsMatrix, IsSesquilinearForm],
     if NrRows(g) <> NrRows( gram ) then
        Error("dimensions are incompatible.");
     fi;
-
-    if not ForAll(Flat(g), t -> t in form!.basefield) then
+    
+    if not BaseDomain(g) = form!.basefield then
        Error("fields are incompatible");
     fi;
 

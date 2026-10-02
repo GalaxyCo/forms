@@ -2,7 +2,7 @@
 #@local form, gg, F2, mat
 
 
-gap> filt:=IsGenericMatrixRep;;
+gap> filt := IsPlistMatrixRep;; #filt:=IsGenericMatrixRep;; is currently broken as row access with M[i] is not allowed and some random function is broken for that reason. I think it is RankMat that is broken and i wrote an issue on this already.
 gap> START_TEST( "Forms: matobj/classic.tst" );
 gap> ToMatObj := {m, F} -> Matrix(filt, F, m);;
 
@@ -191,9 +191,9 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
 >          if filt <> IsPlistRep and not filt( stored ) then
 >            Error( "wrong repres. of matrices" );
 >          fi;
->          pi:= Matrix( PermutationMat( (1,2), d, F ), stored );
+>          pi:= ToMatObj(Matrix( PermutationMat( (1,2), d, F ), stored ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
->          form:= BilinearFormByMatrix( ToMatObj(stored, F), F );
+>          form:= BilinearFormByMatrix( stored, F );
 >          gg:= SymplecticGroup( d, q, permmat );
 >          if filt <> IsPlistRep and not filt( One( gg ) ) then
 >            Error( "wrong repres. of matrices" );

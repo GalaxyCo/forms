@@ -4,7 +4,7 @@ gap> mat := ToMatObj([[1,0,0,0],[0,-1,0,0],[0,0,0,1],[0,0,1,0]]*Z(7)^0, GF(7));
 <4x4-matrix over GF(7)>
 gap> form := BilinearFormByMatrix(mat);
 < bilinear form >
-gap> sub:= [[Z(7)^0,0*Z(7),Z(7)^0,Z(7)],[0*Z(7),Z(7)^0,Z(7)^0,Z(7)^4]];
+gap> sub:= ToMatObj([[Z(7)^0,0*Z(7),Z(7)^0,Z(7)],[0*Z(7),Z(7)^0,Z(7)^0,Z(7)^4]], GF(7)); # TODO: this right now also requires the basis of the given vector space to be the correct type of matrix object due to compatibility issues which in my opinion is kind of stupid. A better API might only accept actual vector space objects or something??
 [ [ Z(7)^0, 0*Z(7), Z(7)^0, Z(7) ], [ 0*Z(7), Z(7)^0, Z(7)^0, Z(7)^4 ] ]
 gap> IsTotallyIsotropicSubspace(form,sub);
 true

@@ -233,8 +233,15 @@ TestListList := function(m)
 end;
 
 # AI SLOP!! WARNING. Pretty much tries to implement what i suggested in issue https://github.com/gap-system/gap/issues/6632
-TestForceMatrixObjGens := function(G, filt)
-    local F, conv, H, attr, r;
+TestForceMatrixObjGens := function(args...)
+    local F, conv, H, attr, r, G, filt;
+    G := args[1];
+    if Size(args) = 1 then
+        #filt := IsGenericMatrixRep; # currently breaks everything, for example issue https://github.com/gap-packages/nofoma/issues/103
+        filt := IsPlistMatrixRep;
+    else
+        filt := args[2];
+    fi;
     F := DefaultFieldOfMatrixGroup(G);
     conv := m -> Matrix(filt, F, TestListList(m));
     H := GroupWithGenerators(List(GeneratorsOfGroup(G), conv), conv(One(G)));
@@ -259,7 +266,7 @@ TestForceMatrixObjGens := function(G, filt)
     if HasName(G) then SetName(H, Name(G)); fi;
     return H;
 end;
-TestForceMatrixObjGensDefault := G -> TestForceMatrixObjGens(G, IsGenericMatrixRep); # Changing this to IsPlistMatrixRep is also interesting for the tests.
+
 
 # TestForceMatrixObjGens := function(G)
 #     local Gens, i, F;

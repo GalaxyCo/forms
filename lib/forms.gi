@@ -3185,7 +3185,7 @@ InstallMethod(OrthogonalSubspaceMat,
   if Length(v) <> NrRows(mat) then
     Error("<v> has the wrong dimension");
   fi;
-  return NullspaceMat(TransposedMat([v*mat]));
+  return NullspaceMat(TransposedMat(Matrix([v*mat],f!.matrix)));;
 end );
 
 #############################################################################
@@ -3209,6 +3209,7 @@ end );
 #O OrthogonalSubspaceMat( <form>, <v> ) <form>: herm. form.
 #  <v>: vector. Returns base of subspace orthogonal to <v> wrt <form>.
 ##
+
 InstallMethod(OrthogonalSubspaceMat,
   "for a form and a vector",
   [IsHermitianForm, IsVector and IsFFECollection],
@@ -3221,7 +3222,7 @@ InstallMethod(OrthogonalSubspaceMat,
   gf := f!.basefield;
   t := Sqrt(Size(gf));
   vt := List(v,x->x^t);
-  return NullspaceMat(mat*TransposedMat([vt]));
+  return NullspaceMat(TransposedMat(Matrix([mat * vt],f!.matrix)));
 end );
 
 #############################################################################
@@ -3253,6 +3254,7 @@ end );
 #  <v>: vector. Returns base of subspace orthogonal to <v> wrt associated
 # bilinear form of <form>.
 ##
+
 InstallMethod(OrthogonalSubspaceMat,
   "for a form and a vector",
   [IsQuadraticForm, IsVector and IsFFECollection],
@@ -3361,7 +3363,7 @@ InstallMethod(IsTotallySingularSubspace,
   [IsQuadraticForm, IsMatrixOrMatrixObj],
   function(f,sub)
   local fsub;
-  # TODO: Here an issue can occur with the matrixobjects, as then the vectors given out from sub are not necessarily Vectors compatible with the Matrix Objects. This boils down to the fact that i have not adapted the \^ operation to allow forms that are internally represented with matrix objects to be multiplied with lists. Rather I am waiting on the gap systems core decision if this behaviour should be allowed or not, so that the forms package behaves accordingly.
+  # TODO: this right now also requires the basis of the given vector space to be the correct type of matrix object due to compatibility issues which in my opinion is kind of stupid. A better API might only accept actual vector space objects or something??
   if IsMatrix(f!.matrix) then
     fsub := Filtered(sub,x-> IsZero(x^f));
   else

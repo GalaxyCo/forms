@@ -207,16 +207,27 @@ DeclareOperation( "EvaluateForm", [ IsQuadraticForm, IsVector and IsFFECollectio
 DeclareOperation( "EvaluateForm", [ IsQuadraticForm, IsMatrixOrMatrixObj]);
 DeclareOperation( "EvaluateForm", [ IsTrivialForm, IsVector and IsFFECollection]);
 
+
 DeclareOperation("OrthogonalSubspaceMat", [IsForm, IsVector and IsFFECollection]);
 DeclareOperation("OrthogonalSubspaceMat", [IsForm, IsMatrixOrMatrixObj]);
 
 DeclareOperation("OrthogonalSubspace", [IsForm, IsVector and IsFFECollection]);
+
 DeclareOperation("OrthogonalSubspace", [IsForm, IsMatrixOrMatrixObj]);
 
-DeclareOperation("IsIsotropicVector", [IsForm, IsVector and IsFFECollection]);
+
 DeclareOperation("IsTotallyIsotropicSubspace", [IsForm, IsMatrixOrMatrixObj]);
 
-DeclareOperation("IsSingularVector", [IsQuadraticForm, IsVector and IsFFECollection]);
+
 DeclareOperation("IsTotallySingularSubspace", [IsQuadraticForm, IsMatrixOrMatrixObj]);
 
+# TODO: maybe we should do stuff like this to not have IsVector and IsFFECollection ???
+# DeclareOperation("IsSingularVector", [IsQuadraticForm, IsVectorObj]);
+# DeclareOperation("IsIsotropicVector", [IsForm, IsVectorObj]);
+# DeclareOperation("OrthogonalSubspace", [IsForm, IsVectorObj]);
+# DeclareOperation("OrthogonalSubspaceMat", [IsForm, IsVectorObj]);
+
+
+DeclareOperation("IsSingularVector", [IsQuadraticForm, IsVector and IsFFECollection]);
+DeclareOperation("IsIsotropicVector", [IsForm, IsVector and IsFFECollection]);
 

@@ -53,7 +53,7 @@ DeclareGlobalFunction( "TransposedFrobeniusMat" );
 # Methods (to be used by the user):
 #############################################################################
 
-DeclareOperation( "ScalarOfSimilarity", [ IsMatrix, IsSesquilinearForm ]);
+DeclareOperation( "ScalarOfSimilarity", [ IsMatrixOrMatrixObj, IsSesquilinearForm ]);
 DeclareOperation( "PreservedFormsOp", [ IsMatrixGroup ] ); #jdb 19/09/2018: was PreservedForms.
 
 DeclareOperation( "PreservedForms", [ IsMatrixGroup ] );

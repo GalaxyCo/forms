@@ -13,7 +13,7 @@ if not IsBound(ConformalSymplecticGroup) then
   Add( exclude, "adv/conformal.tst" );
 fi;
 
-## THIS IS A TEMPORARY CHANGE! DO NOT COMMIT
+# # THIS IS A TEMPORARY CHANGE! DO NOT COMMIT
 # TestDirectory(DirectoriesPackageLibrary("forms", "tst"),
 #     rec(
 #       exitGAP := true,

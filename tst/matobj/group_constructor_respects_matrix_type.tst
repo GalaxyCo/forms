@@ -1,7 +1,7 @@
 #@local q, d, e, F, C, g, stored, form, calls, x
 gap> START_TEST("Forms: /matobj/group_constructor_respects_matrix_type.tst");
 gap> ReadPackage("forms", "tst/formspace/custom_test_functions.g");;
-gap> # Also AI SLOP, but proved very usefull. This test tests the different constructors of classical groups to make sure that if they are provided with a IsPlistMatrixRep matrix group/form/matrix the produced group is again consisting of IsPlistMatrixRep matrices.
+gap> # Also AI SLOP, but proved very usefull. This test tests the different constructors of classical groups to make sure that if they are provided with a IsPlistMatrixRep matrix group/form/matrix the produced group is again consisting of IsPlistMatrixRep matrices. It would be nice as a future change to also make the base group constructors maybe take a filter as an input to allow for specifying what type of group should be created.
 gap> q:= 2;; d:= 4;; e:= -1;; F:= GF(q);;
 gap> C:= GeneralOrthogonalGroup;;
 gap> g:= TestForceMatrixObjGens( C( e, d, q ), IsPlistMatrixRep );;

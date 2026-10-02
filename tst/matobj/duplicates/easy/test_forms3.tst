@@ -9,11 +9,7 @@ gap> form := QuadraticFormByMatrix(mat,f);
 gap> TypeOfForm(form);
 0
 gap> BaseChangeToCanonical(form);
-[ [ Z(2^3)^3, 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), Z(2)^0, 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), Z(2^3)^2, Z(2^3)^4, 0*Z(2), 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0, 0*Z(2) ], 
-  [ 0*Z(2), 0*Z(2), 0*Z(2), 0*Z(2), Z(2)^0 ] ]
+<immutable 5x5-matrix over GF(2^3)>
 gap> iso := IsometricCanonicalForm(form);
 < parabolic quadratic form >
 gap> Display(form);

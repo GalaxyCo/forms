@@ -1,10 +1,9 @@
 gap> START_TEST("Forms: matobj/test_forms16.tst");
-gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> q := 5;
 5
 gap> f := GF(q^4);
 GF(5^4)
-gap> mat := ToMatObj(NullMat(3,3,f), GF(q^4));
+gap> mat := Matrix(IsPlistMatrixRep, f, NullMat(3,3,f));
 <3x3-matrix over GF(5^4)>
 gap> mat[1,2] := Z(q^4);
 Z(5^4)
@@ -18,13 +17,13 @@ gap> v := f^3;
 ( GF(5^4)^3 )
 gap> lines := Subspaces(v,1);
 Subspaces( ( GF(5^4)^3 ), 1 )
-gap> matrices := List(lines,x->BasisVectors(Basis(x)));;
-gap> vectors := List(matrices,x->x[1]);;
-gap> results := Collected(List(vectors,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
+gap> matrices := List(lines,x->Matrix(BasisVectors(Basis(x)), mat));;
+gap> vectors := List(matrices,x->RowsOfMatrix(x)[1]);;
+gap> results := Collected(List(vectors,x->EvaluateForm(form,x,x)));;
 gap> [Zero(f),q^6+1] in results;
 true
-gap> results := Collected(List(matrices,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]),Vector(x, GramMatrix(form)[1]))));;
-gap> [[[Zero(f)]],q^6+1] in results;
+gap> results := Collected(List(matrices,x->EvaluateForm(form,x,x)));;
+gap> [ZeroMatrix(1,1,mat),q^6+1] in results;
 true
 gap> Number(vectors,x->IsIsotropicVector(form,x))=q^6+1;
 true

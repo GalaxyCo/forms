@@ -1,5 +1,4 @@
 gap> START_TEST("Forms: matobj/test_forms15.tst");
-gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> q := 5;
 5
 gap> f := GF(q);
@@ -8,32 +7,30 @@ gap> dim := 5;
 5
 gap> v := f^dim;
 ( GF(5)^5 )
-gap> mat := ToMatObj(IdentityMat(dim,f), f);
+gap> mat := Matrix(IsPlistMatrixRep, f, IdentityMat(dim,f));
 <5x5-matrix over GF(5)>
 gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> lines := Subspaces(v,1);
 Subspaces( ( GF(5)^5 ), 1 )
-gap> matrices := List(lines,x->BasisVectors(Basis(x)));;
-gap> vectors := List(matrices,x->x[1]);;
-gap> results := Collected(List(vectors,x->EvaluateForm(form,Vector(x, GramMatrix(form)[1]))));;
+gap> matrices := List(lines,x->Matrix(BasisVectors(Basis(x)), mat));;
+gap> vectors := List(matrices,x->RowsOfMatrix(x)[1]);;
+gap> results := Collected(List(vectors,x->EvaluateForm(form,x)));;
 gap> [Zero(f),(q^(dim-1)-1)/(q-1)] in results;
 true
-gap> results := Collected(List(matrices,x->Vector(x, GramMatrix(form)[1])^form));;
-gap> [[[Zero(f)]],(q^(dim-1)-1)/(q-1)] in results;
+gap> results := Collected(List(matrices,x->x^form));;
+gap> [ZeroMatrix(1,1,mat),(q^(dim-1)-1)/(q-1)] in results;
 true
-gap> Number(vectors,x->IsSingularVector(form,Vector(x, GramMatrix(form)[1])))=(q^(dim-1)-1)/(q-1);
+gap> Number(vectors,x->IsSingularVector(form,x))=(q^(dim-1)-1)/(q-1);
 true
-gap> Number(matrices,x->IsTotallySingularSubspace(form,Vector(x, GramMatrix(form)[1])))=(q^(dim-1)-1)/(q-1);
+gap> Number(matrices,x->IsTotallySingularSubspace(form,x))=(q^(dim-1)-1)/(q-1);
 true
 gap> planes := Subspaces(v,2);
 Subspaces( ( GF(5)^5 ), 2 )
-gap> matrices := List(planes,x->BasisVectors(Basis(x)));;
-gap> results := Collected(List(matrices,x->Vector(x, GramMatrix(form)[1])^form));;
-gap> z := Zero(f);
-0*Z(5)
-gap> [[[z,z],[z,z]],(q^(dim-1)-1)/(q-1)] in results;
+gap> matrices := List(planes,x->Matrix(BasisVectors(Basis(x)), mat));;
+gap> results := Collected(List(matrices,x->x^form));;
+gap> [ZeroMatrix(2,2,mat),(q^(dim-1)-1)/(q-1)] in results;
 true
-gap> Number(matrices,x->IsTotallySingularSubspace(form,Vector(x, GramMatrix(form)[1])))=(q^(dim-1)-1)/(q-1);
+gap> Number(matrices,x->IsTotallySingularSubspace(form,x))=(q^(dim-1)-1)/(q-1);
 true
 gap> STOP_TEST("matobj/test_forms15.tst", 10000 );
