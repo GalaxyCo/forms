@@ -2017,7 +2017,7 @@ InstallMethod( BaseChangeOrthogonalBilinear,
     one := One(gf);
 
     A := MutableCopyMat(mat);
-    if IsMatrixObj(mat) then
+    if IsMatrixObj(mat) and not IsMatrix(mat) then
       Assert(0, BaseDomain(mat) = gf, "(internal error) Error field of the matrix object and the given field did not coincide!");
       D := OneMutable(mat);
     else
@@ -2301,7 +2301,7 @@ InstallMethod(BaseChangeOrthogonalQuadratic, [ IsMatrixOrMatrixObj, IsField and 
     one := One(gf);
 
     A := MutableCopyMat(mat);
-    if IsMatrixObj(mat) then
+    if IsMatrixObj(mat) and not IsMatrix(mat) then
       Assert(0, BaseDomain(mat) = gf, "(internal error) Error field of the matrix object and the given field did not coincide!");
       D := OneMutable(mat);
     else
@@ -2585,7 +2585,7 @@ InstallMethod(BaseChangeHermitian, [ IsMatrixOrMatrixObj, IsField and IsFinite ]
     t := Sqrt(Size(gf));
 
     A := MutableCopyMat(mat);
-    if IsMatrixObj(mat) then
+    if IsMatrixObj(mat) and not IsMatrix(mat) then
       Assert(0, BaseDomain(mat) = gf, "(internal error) Error field of the matrix object and the given field did not coincide!");
       D := OneMutable(mat);
     else
@@ -2708,7 +2708,7 @@ InstallMethod( BaseChangeSymplectic, [IsMatrixOrMatrixObj, IsField and IsFinite]
    local d, basechange, blocknr, diagpos, pos, j, a, b, offset;
    d := NrRows(m);
    m := MutableCopyMat(m);
-    if IsMatrixObj(m) then
+    if IsMatrixObj(m) and not IsMatrix(m) then
       Assert(0, BaseDomain(m) = f, "(internal error) Error field of the matrix object and the given field did not coincide!");
       basechange := OneMutable(m);
     else

@@ -1,4 +1,4 @@
-#@local ToMatObj, is_equal, q, F, d, es, e, g, filters, filt, stored, pi, permmat, is_sub, form, gg, F2, mat
+#@local ToMatObj, is_equal, q, F, d, es, e, g, filters, filt, stored, pi, permmat, is_sub, form, gg, F2, mat, up, conv, to_plain
 
 gap> filt := IsPlistMatrixRep;; #filt:=IsGenericMatrixRep;; is currently broken as row access with M[i] is not allowed and some random function is broken for that reason. I think it is RankMat that is broken and i wrote an issue on this already.
 gap> START_TEST( "Forms: matobj/classic.tst" );
@@ -8,32 +8,47 @@ gap> ToMatObj := {m, F} -> Matrix(filt, F, m);;
 # by calling the global functions in the GAP library that delegate to these
 # methods.  Thus we also test these functions.
 
-# Provide an auxiliary function (until GAP's '=' gets fast). this has gotten really complicated in oreder that gap does not do a million computations and the test is horribly slow. 
-# Workaround for https://github.com/gap-system/gap/issues/6670
-# membership tests in groups with matrix object generators can fail in the MeatAxe, so compare plain-list copies. THIS IS greatly assited by ai TODO this test still fails, which is releated to issue https://github.com/gap-system/gap/issues/6671
-gap> is_sub:= function( G, l )
->      local up, P;
->      if HasNiceMonomorphism( G ) or
->         ForAny( [ IsFullSubgroupGLorSLRespectingBilinearForm,
->                   IsFullSubgroupGLorSLRespectingQuadraticForm,
->                   IsFullSubgroupGLorSLRespectingSesquilinearForm ],
->                 p -> Tester( p )( G ) and p( G ) ) then
->        return IsSubset( G, l );
->      fi;
->      up:= function( x )
->        if IsPlistRep( x ) then
->          return x;
->        fi;
->        return Unpack( x );
->      end;
->      P:= GroupWithGenerators( List( GeneratorsOfGroup( G ), up ) );
->      if HasSize( G ) then
->        SetSize( P, Size( G ) );
->      fi;
->      return IsSubset( P, List( l, up ) );
+# Provide auxiliary functions (until GAP's '=' gets fast).
+# TODO: from here this is AI. however it looks sensible to me.
+# Membership tests are done in copies of the groups with plain or compressed
+# matrices, because they fail for matrix objects, see
+#   https://github.com/gap-system/gap/issues/6670 (MeatAxe) and
+#   https://github.com/gap-system/gap/issues/6671 (sesquilinear forms).
+# 'to_plain' keeps forms, properties and order, so that the fast form-based
+# membership test is used; it is called once per reference group, so that
+# GAP's cached nice monomorphism is reused.
+# Group and elements are compressed over the same field (the field of the
+# entries), since compressions over different fields are not recognized as
+# equal in membership tests. conv tries to use compress matrix thingys as otherwise it would be to slow
+gap> up:= function( x )
+>      if IsPlistRep( x ) then return x; fi;
+>      return Unpack( x );
 >    end;;
-gap> is_equal:= { G1, G2 } -> is_sub( G1, GeneratorsOfGroup( G2 ) ) and
->                             is_sub( G2, GeneratorsOfGroup( G1 ) );;# Test the creation of orthogonal groups.
+gap> conv:= function( x, F )
+>      if Size( F ) > 256 then return up( x ); fi;
+>      return Immutable( Matrix( F, up( x ) ) );
+>    end;;
+gap> to_plain:= function( G )
+>      local F, P, a, r;
+>      F:= DefaultFieldOfMatrixGroup( Group( List( GeneratorsOfGroup( G ), up ) ) );
+>      P:= Group( List( GeneratorsOfGroup( G ), x -> conv( x, F ) ) );
+>      for a in [ InvariantBilinearForm, InvariantQuadraticForm,
+>                 InvariantSesquilinearForm ] do
+>        if Tester( a )( G ) then
+>          r:= ShallowCopy( a( G ) ); r.matrix:= up( r.matrix ); Setter( a )( P, r );
+>        fi;
+>      od;
+>      for a in [ IsFullSubgroupGLorSLRespectingBilinearForm,
+>                 IsFullSubgroupGLorSLRespectingQuadraticForm,
+>                 IsFullSubgroupGLorSLRespectingSesquilinearForm ] do
+>        if Tester( a )( G ) then Setter( a )( P, a( G ) ); fi;
+>      od;
+>      if HasSize( G ) then SetSize( P, Size( G ) ); fi;
+>      return P;
+>    end;;
+gap> is_sub:= { P, l } -> ForAll( l, x -> conv( x, DefaultFieldOfMatrixGroup( P ) ) in P );;
+gap> is_equal:= { P, G } -> is_sub( P, GeneratorsOfGroup( G ) ) and
+>                           is_sub( to_plain( G ), GeneratorsOfGroup( P ) );;# Test the creation of orthogonal groups.
 gap> for q in [ 2, 3, 4, 5, 8 ] do
 >      F:= GF(q);
 >      for d in [ 3 .. 5 ] do
@@ -44,7 +59,7 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >        fi;
 >        for e in es do
 >          # GO(e,d,q)
->          g:= TestForceMatrixObjGens(GeneralOrthogonalGroup( e, d, q ), filt);
+>          g:= TestForceMatrixObjGens(GeneralOrthogonalGroup( e, d, q ), filt,true);
 >          stored:= InvariantQuadraticForm( g ).matrix;
 >          pi:= ToMatObj(PermutationMat( (1,2,3), d, F ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
@@ -75,7 +90,7 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >            fi;
 >          fi;
 >          # SO(e,d,q)
->          g:= TestForceMatrixObjGens(SpecialOrthogonalGroup( e, d, q ), filt);
+>          g:= TestForceMatrixObjGens(SpecialOrthogonalGroup( e, d, q ), filt, true);
 >          stored:= InvariantQuadraticForm( g ).matrix;
 >          pi:= ToMatObj(PermutationMat( (1,2,3), d, F ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
@@ -106,7 +121,7 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >            fi;
 >          fi;
 >          # Omega(e,d,q)
->          g:= TestForceMatrixObjGens(Omega( e, d, q ), filt);
+>          g:= TestForceMatrixObjGens(Omega( e, d, q ), filt, true);
 >          stored:= InvariantQuadraticForm( g ).matrix;
 >          pi:= ToMatObj(PermutationMat( (1,2,3), d, F ), F);
 >          permmat:= pi * stored * TransposedMat( pi );
@@ -146,7 +161,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >      F2:= GF(q^2);
 >      for d in [ 2 .. 8 ] do
 >        # GU(d,q)
->        g:= TestForceMatrixObjGens(GeneralUnitaryGroup( d, q ), filt);
+>        g:= TestForceMatrixObjGens(GeneralUnitaryGroup( d, q ), filt, true);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
 >        pi:= ToMatObj(PermutationMat( (1,2), d, F ), F2);
 >        permmat:= pi * stored * TransposedMat( pi );
@@ -164,7 +179,7 @@ gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
 >          Error( "problem with GU(", d, ",", q, ")" );
 >        fi;
 >        # SU(d,q)
->        g:= TestForceMatrixObjGens(SpecialUnitaryGroup( d, q ), filt);
+>        g:= TestForceMatrixObjGens(SpecialUnitaryGroup( d, q ), filt,true);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
 >        pi:= ToMatObj(PermutationMat( (1,2), d, F ), F2);
 >        permmat:= pi * stored * TransposedMat( pi );

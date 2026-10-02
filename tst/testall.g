@@ -14,21 +14,21 @@ if not IsBound(ConformalSymplecticGroup) then
 fi;
 
 # # THIS IS A TEMPORARY CHANGE! DO NOT COMMIT
-# TestDirectory(DirectoriesPackageLibrary("forms", "tst"),
-#     rec(
-#       exitGAP := true,
-#       exclude := exclude,
-#       #rewriteToFile := true,  # enable this line to update tests
-#     ));
-# FORCE_QUIT_GAP(1);
-
-TestDirectory(DirectoriesPackageLibrary("forms", "tst/matobj"),
+TestDirectory(DirectoriesPackageLibrary("forms", "tst"),
     rec(
       exitGAP := true,
       exclude := exclude,
       #rewriteToFile := true,  # enable this line to update tests
     ));
 FORCE_QUIT_GAP(1);
+
+# TestDirectory(DirectoriesPackageLibrary("forms", "tst/matobj"),
+#     rec(
+#       exitGAP := true,
+#       exclude := exclude,
+#       #rewriteToFile := true,  # enable this line to update tests
+#     ));
+# FORCE_QUIT_GAP(1);
 
 # TestDirectory(DirectoriesPackageLibrary("forms", "tst/formspace"),
 #     rec(

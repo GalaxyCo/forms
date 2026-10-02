@@ -11,6 +11,10 @@
 if not IsBound(IsMatrixOrMatrixObj) then
     BindGlobal("IsMatrixOrMatrixObj", IsMatrixObj);
 fi;
+#to only work on "true" matrix objects, this was added to fix some issues with collisions with the compressed versions. TODO: it might be good to use this in a lot more places to also avoid redundat conversions
+BindGlobal( "Forms_IsStrictMatrixObject",
+    m -> IsMatrixObj( m ) and not IsPlistRep( m )
+         and not IsGF2MatrixRep( m ) and not Is8BitMatrixRep( m ) );
 
 # We cannot use the function 'IsEqualProjective' from the recog package
 # because the matrices that describe forms can have zero rows.
@@ -78,7 +82,7 @@ BindGlobal("Forms_OrthogonalGroup",
 
     # If the prescribed form fits then just return.
     # TODO: this is wasteful right now, but the group g has matrices that does not match g so it should be rebuild. This however might be slow. A better solution would be to have a nice function that can just convert all the matrices and so forth of a group into the right representation.
-    if stored = form!.matrix and not IsMatrixObj(form!.matrix) then
+    if stored = form!.matrix and not Forms_IsStrictMatrixObject(form!.matrix) then
       return g;
     fi;
 
@@ -676,7 +680,7 @@ InstallMethod( GeneralUnitaryGroupCons,
     fi;
 
     # If the prescribed form fits then just return.
-    if stored = form!.matrix and not IsMatrixObj(form!.matrix) then
+    if stored = form!.matrix and not Forms_IsStrictMatrixObject(form!.matrix) then
       return g;
     fi;
 
@@ -822,7 +826,7 @@ InstallMethod( SpecialUnitaryGroupCons,
     fi;
 
     # If the prescribed form fits then just return.
-    if stored = form!.matrix and not IsMatrixObj(form!.matrix) then
+    if stored = form!.matrix and not Forms_IsStrictMatrixObject(form!.matrix) then
       return g;
     fi;
 
