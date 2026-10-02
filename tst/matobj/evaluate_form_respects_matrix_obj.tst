@@ -1,5 +1,5 @@
 #@local filt, f, dim, ToMatObj, v, w, frob, M, bil, her, quad, triv, id, her2,  MM, bil2, quad2, triv2, vv, ww
-gap> START_TEST("Forms: /matobj/evaluate_form_respects_matrix_obj.tst");
+gap> START_TEST("Forms: /matobj/evaluate_form_respects_matrix_obj.tst"); # TODO i am not sure entirely this operation should be allowed...
 gap> ToMatObj := m -> Matrix(IsGenericMatrixRep, GF(9), m);;
 gap> MM := [[Z(9), Z(9)^2, Z(9)^3], [One(GF(9)), Z(9)^5, Zero(GF(9))]];;
 gap> M := ToMatObj(MM);;

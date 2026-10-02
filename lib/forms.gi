@@ -1229,6 +1229,10 @@ InstallOtherMethod( \^, "for a pair of FFE vectors and a sesquilinear form",
     if Size(pair) <> 2 then
        Error("The first argument must be a pair of vectors");
     fi;
+    if not IsList(f!.matrix) then
+      ## TODO should either throw error if the vectors are not vector objects or make a conversion, also related to https://github.com/gap-system/gap/issues/6634.
+      pair := List(pair, v -> Vector(v, CompatibleVector(f!.matrix))); 
+    fi;
     return pair[1] * f!.matrix * pair[2];
   end );
 
@@ -1265,7 +1269,10 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and a sesquilinear form",
   [ IsFFECollCollColl, IsBilinearForm ],
   function( pair, f )
     if Size(pair) <> 2 then
-       Error("The first argument must be a pair of vectors");
+       Error("The first argument must be a pair of matrices");
+    fi;
+    if not IsList(f!.matrix) and ForAny(pair, IsList) then
+      Error("form is internally represented with a matrix object, please evaluate with matrices of same representation. for help see TODO");
     fi;
     return pair[1] * f!.matrix * TransposedMat(pair[2]);
   end );
@@ -1294,6 +1301,10 @@ InstallOtherMethod( \^, "for a pair of FFE vectors and an hermitian form",
     if Size(pair) <> 2 then
        Error("The first argument must be a pair of vectors");
     fi;
+    if not IsList(f!.matrix) then
+      ## TODO should either throw error if the vectors are not vector objects or make a conversion, also related to https://github.com/gap-system/gap/issues/6634.
+      pair := List(pair, v -> Vector(v, CompatibleVector(f!.matrix))); 
+    fi;
     bf := f!.basefield;
     hh := DegreeOverPrimeField(bf) / 2;
     frob := FrobeniusAutomorphism(bf)^hh;
@@ -1304,8 +1315,11 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and an hermitian form",
   [ IsFFECollCollColl, IsHermitianForm ],
   function( pair, f )
     local frob,hh,bf;
+    if not IsList(f!.matrix) and ForAny(pair, IsList) then
+      Error("form is internally represented with a matrix object, please evaluate with matrices of same representation. for help see TODO");
+    fi;
     if Size(pair) <> 2 then
-       Error("The first argument must be a pair of vectors");
+       Error("The first argument must be a pair of matrices");
     fi;
     bf := f!.basefield;
     hh := DegreeOverPrimeField(bf) / 2;
@@ -1314,7 +1328,7 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and an hermitian form",
   end );
 
 # TODO: same change as the pair method with IsBilinear and IsHermitian 
-InstallOtherMethod( \^, "for a pair of FFE matrices and a trivial form", 
+InstallOtherMethod( \^, "for a pair of FFE vectors and a trivial form", 
   [ IsList, IsTrivialForm ],
   function( pair, f )
     # TODO: this does also not change the field but i have elcected that this is fine for now.
@@ -1327,7 +1341,7 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and a trivial form",
     return Zero(BaseField(f));
   end );
 
-InstallOtherMethod( \^, "for a pair of FFE matrices and a trivial form", #new in 1.2.1
+InstallOtherMethod( \^, "for a pair of FFE vectors and a trivial form", #new in 1.2.1
   [ IsVectorList and IsFFECollColl, IsTrivialForm ],
   function( pair, f )
     if Size(pair) <> 2 then
@@ -1339,6 +1353,10 @@ InstallOtherMethod( \^, "for a pair of FFE matrices and a trivial form", #new in
 InstallOtherMethod( \^, "for a FFE vector and a quadratic form",
   [ IsVector and IsFFECollection, IsQuadraticForm ],
   function( v, f )
+    if not IsList(f!.matrix) and IsList(v) then
+      ## TODO should either throw error if the vectors are not vector objects or make a conversion, also related to https://github.com/gap-system/gap/issues/6634.
+      v := Vector(v, CompatibleVector(f!.matrix));
+    fi;
     return v * f!.matrix * v;
   end );
 
@@ -1351,6 +1369,9 @@ InstallOtherMethod( \^, "for a FFE vector object and a quadratic form",
 InstallOtherMethod( \^, "for a FFE matrix and a quadratic form",
   [ IsMatrixOrMatrixObj, IsQuadraticForm ],
   function( m, f )
+    if not IsList(f!.matrix) and IsList(m) then
+      Error("form is internally represented with a matrix object, please evaluate with matrices of same representation. for help see TODO");
+    fi;
     return m * f!.matrix * TransposedMat(m);
   end );
 
@@ -3098,13 +3119,15 @@ InstallMethod( EvaluateForm,  "for a bilinear form and a pair of vectors",
   [IsBilinearForm and IsFormRep,
         IsVector and IsFFECollection, IsVector and IsFFECollection],
   function(f,v,w)
-    return v*f!.matrix*w;
+    # return v*f!.matrix*w;
+    return [v,w]^f;
 end );
 
 InstallMethod( EvaluateForm,  "for a bilinear form and a pair of matrices",
   [IsBilinearForm and IsFormRep, IsFFECollColl, IsFFECollColl],
   function(f,v,w)
-    return v*f!.matrix*TransposedMat(w);
+    # return v*f!.matrix*TransposedMat(w);
+    return [v,w]^f;
 end );
 
 InstallMethod( EvaluateForm, "for an hermitian form and a pair of vectors",
@@ -3112,41 +3135,44 @@ InstallMethod( EvaluateForm, "for an hermitian form and a pair of vectors",
         IsVector and IsFFECollection, IsVector and IsFFECollection],
   function(f,v,w)
     local gf,t,hh,frob;
-    gf := f!.basefield;
-    hh := DegreeOverPrimeField(gf) / 2;
-    frob := FrobeniusAutomorphism(gf)^hh;
-    return v*f!.matrix*(w^frob);
+    # gf := f!.basefield;
+    # hh := DegreeOverPrimeField(gf) / 2;
+    # frob := FrobeniusAutomorphism(gf)^hh;
+    # return v*f!.matrix*(w^frob);
+    return [v, w]^f;
 end );
 
-# TODO fix this for matobj
 InstallMethod( EvaluateForm,  "for an hermitian form and a pair of matrices",
   [IsHermitianForm and IsFormRep, IsFFECollColl, IsFFECollColl],
   function(f,v,w)
-    local gf,t,wCONJ,m,n,i,j;
-    gf := f!.basefield;
-    t := Sqrt(Size(gf));
-    wCONJ := MutableTransposedMat(w);
-    m := NrRows(wCONJ);
-    n := NrCols(wCONJ);
-    for i in [1..m] do
-      for j in [1..n] do
-        wCONJ[i,j] := wCONJ[i,j]^t;
-      od;
-    od;
-    return v*f!.matrix*wCONJ;
+    # local gf,t,wCONJ,m,n,i,j;
+    # gf := f!.basefield;
+    # t := Sqrt(Size(gf));
+    # wCONJ := MutableTransposedMat(w);
+    # m := NrRows(wCONJ);
+    # n := NrCols(wCONJ);
+    # for i in [1..m] do
+    #   for j in [1..n] do
+    #     wCONJ[i,j] := wCONJ[i,j]^t;
+    #   od;
+    # od;
+    # return v*f!.matrix*wCONJ;
+    return [v, w]^f;
 end );
 
 InstallMethod( EvaluateForm, "for quadratic forms",
   [IsQuadraticForm and IsFormRep, IsVector and IsFFECollection],
   function(f,v)
-    return v*f!.matrix*v;
+    # return v*f!.matrix*v;
+    return v^f;
 end );
 
 InstallMethod( EvaluateForm,
     "for a quadratic form and an FFE matrix",
     [ IsQuadraticForm, IsMatrixOrMatrixObj],
     function(f,m)
-        return m * f!.matrix * TransposedMat(m);
+        # return m * f!.matrix * TransposedMat(m);
+        return m^f;
     end );
 
 InstallMethod( EvaluateForm,  "for trivial forms and a pair of vectors",
@@ -3173,19 +3199,42 @@ end );
 # sesquilinear forms (for users).
 #############################################################################
 #############################################################################
-#O OrthogonalSubspaceMat( <form>, <v> ) <form>: bil. form.
+#O OrthogonalSubspaceMat( <form>, <v> ) <form>: form.
 #  <v>: vector. Returns base of subspace orthogonal to <v> wrt <form>.
 ##
 InstallMethod(OrthogonalSubspaceMat,
-  "for a form and a vector",
-  [IsBilinearForm, IsVector and IsFFECollection],
-  function(f,v)
+  "for a sesquilinear form and a vector",
+  [IsSesquilinearForm, IsVector and IsFFECollection],
+  function(f, v)
   local mat;
   mat := f!.matrix;
+  if not IsList(mat) and IsList(v) then
+    v := Vector(v, CompatibleVector(mat));
+  fi;
   if Length(v) <> NrRows(mat) then
     Error("<v> has the wrong dimension");
   fi;
-  return NullspaceMat(TransposedMat(Matrix([v*mat],f!.matrix)));;
+  return NullspaceMat(TransposedMat(Matrix([(v * mat)^CompanionAutomorphism(f)], mat)));
+end );
+
+#############################################################################
+#O OrthogonalSubspaceMat( <form>, <sub> ) <form>: sesquilinear form.
+#  <sub>: base of subspace. Returns base of subspace orthogonal to <sub> wrt <form>.
+##
+InstallMethod(OrthogonalSubspaceMat,
+  "for a sesquilinear form and a basis of a subspace",
+  [IsSesquilinearForm, IsMatrixOrMatrixObj],
+  function(f, sub)
+  local mat;
+  mat := f!.matrix;
+  if not IsList(mat) and IsList(sub) then
+    ## a basis given as a plain list is converted to the representation of the Gram matrix
+    sub := Matrix(sub, mat);
+  fi;
+  if NrCols(sub) <> NrRows(mat) then
+    Error("<sub> contains vectors of wrong dimension");
+  fi;
+  return NullspaceMat(TransposedMat((sub * mat)^CompanionAutomorphism(f)));
 end );
 
 #############################################################################
@@ -3193,55 +3242,19 @@ end );
 #  <sub>: base of subspace. Returns base of subspace orthogonal to <sub> wrt <form>.
 ##
 InstallMethod(OrthogonalSubspaceMat,
-  "for a form and a basis of a subspace",
+  "for a bilinear form and a basis of a subspace",
   [IsBilinearForm, IsMatrixOrMatrixObj],
-  function(f,sub)
-  local mat,perp;
+  function(f, sub)
+  local mat;
   mat := f!.matrix;
-  if Length(sub[1]) <> NrRows(mat) then
+  if not IsList(mat) and IsList(sub) then
+    ## a basis given as a plain list is converted to the representation of the Gram matrix
+    sub := Matrix(sub, mat);
+  fi;
+  if NrCols(sub) <> NrRows(mat) then
     Error("<sub> contains vectors of wrong dimension");
   fi;
-  perp := TransposedMat(sub*mat);
-  return NullspaceMat(perp);
-end );
-
-#############################################################################
-#O OrthogonalSubspaceMat( <form>, <v> ) <form>: herm. form.
-#  <v>: vector. Returns base of subspace orthogonal to <v> wrt <form>.
-##
-
-InstallMethod(OrthogonalSubspaceMat,
-  "for a form and a vector",
-  [IsHermitianForm, IsVector and IsFFECollection],
-  function(f,v)
-  local mat,gf,t,vt;
-  mat := f!.matrix;
-  if Length(v) <> NrRows(mat) then
-    Error("<v> has the wrong dimension");
-  fi;
-  gf := f!.basefield;
-  t := Sqrt(Size(gf));
-  vt := List(v,x->x^t);
-  return NullspaceMat(TransposedMat(Matrix([mat * vt],f!.matrix)));
-end );
-
-#############################################################################
-#O OrthogonalSubspaceMat( <form>, <sub> ) <form>: herm. form.
-#  <sub>: base of subspace. Returns base of subspace orthogonal to <sub> wrt <form>.
-##
-InstallMethod(OrthogonalSubspaceMat,
-  "for a form and a basis of a subspace",
-  [IsHermitianForm, IsMatrixOrMatrixObj],
-  function(f,sub)
-  local mat,gf,t,subt;
-  mat := f!.matrix;
-  if Length(sub[1]) <> NrRows(mat) then
-    Error("<sub> contains vectors of wrong dimension");
-  fi;
-  gf := f!.basefield;
-  t := Sqrt(Size(gf));
-  subt := List(sub,x->List(x,y->y^t));
-  return NullspaceMat(mat*TransposedMat(subt));
+  return NullspaceMat(TransposedMat(sub * mat));
 end );
 
 #############################################################################
@@ -3300,15 +3313,11 @@ InstallMethod(IsTotallyIsotropicSubspace,
   "for a form and a basis of a subspace",
   [IsSesquilinearForm, IsMatrixOrMatrixObj],
   function(f,sub)
-    local mat;
-    mat := f!.matrix;
-    if f!.type = "hermitian" then
-       #return IsZero( (sub^CompanionAutomorphism( f )) * mat * TransposedMat(sub) );
-       #the next line replaces the previous one, repairing a bug found by John Bamberg.
-       return IsZero( sub * mat * TransposedMat(sub^CompanionAutomorphism( f )) );
-    else
-       return IsZero( sub * mat * TransposedMat(sub) );
+    if not IsList(f!.matrix) and IsList(sub) then
+      ## a basis given as a plain list is converted to the representation of the Gram matrix
+      sub := Matrix(sub, f!.matrix);
     fi;
+    return IsZero( [sub, sub]^f );
 end );
 
 #############################################################################
@@ -3362,18 +3371,16 @@ InstallMethod(IsTotallySingularSubspace,
   "for a quadratic form and a basis of a subspace",
   [IsQuadraticForm, IsMatrixOrMatrixObj],
   function(f,sub)
-  local fsub;
-  # TODO: this right now also requires the basis of the given vector space to be the correct type of matrix object due to compatibility issues which in my opinion is kind of stupid. A better API might only accept actual vector space objects or something??
-  if IsMatrix(f!.matrix) then
-    fsub := Filtered(sub,x-> IsZero(x^f));
-  else
-    fsub := Filtered(sub,x-> IsZero(Vector(x, f!.matrix[1])^f));
+  local g;
+  if not IsList(f!.matrix) and IsList(sub) then
+    ## a basis given as a plain list is converted to the representation of the Gram matrix
+    sub := Matrix(sub, f!.matrix);
   fi;
-  if Length(fsub) <> NrRows(sub) then
+  g := sub^f;   # g[i,j] = b_i * M * b_j^T, so g[i,i] = Q(b_i)
+  if ForAny([1..NrRows(sub)], i -> not IsZero(g[i,i])) then #TODO BIG WARNING here i took some ai code which i think changes the math, however the way it was previously was broken (did nothing) which is why i have decided that it is fine. It should non the less be checked by someone who knows more than me and can verify that this for sure is correct.
     return false;
-  else
-    return IsTotallyIsotropicSubspace(AssociatedBilinearForm(f),sub);
   fi;
+  return IsTotallyIsotropicSubspace(AssociatedBilinearForm(f), sub);
 end );
 
 #############################################################################
