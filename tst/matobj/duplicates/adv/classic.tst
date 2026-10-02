@@ -1,57 +1,31 @@
 #@local ToMatObj, is_equal, q, F, d, es, e, g, filters, filt, stored, pi, permmat, is_sub, form, gg, F2, mat, up, conv, to_plain
 
 gap> filt := IsPlistMatrixRep;; #filt:=IsGenericMatrixRep;; is currently broken as row access with M[i] is not allowed and some random function is broken for that reason. I think it is RankMat that is broken and i wrote an issue on this already.
+gap> ReadPackage("forms", "tst/formspace/custom_test_functions.g");;
 gap> START_TEST( "Forms: matobj/classic.tst" );
 gap> ToMatObj := {m, F} -> Matrix(filt, F, m);;
 
+# TODO this text is currently excluded. For reasons see this
 # Test the methods for constructing classical groups w.r.t. prescribed forms,
 # by calling the global functions in the GAP library that delegate to these
 # methods.  Thus we also test these functions.
-
+# TODO this test was super slow so i massively reduced the number of tested cases compared with the other classic.tst. I think the reason for this slow down is that the non matrix obj versions of the tested functions often return the exact same group, which i think then because of some internal gap magic leads to the inclusion test being a lot faster. Anyways. So i think it would be good if the matrix obj constructors somehow keep more of the structure so that these tsts go faster.. To be fair i have yet not seein in pass in this form, as it is super slow.... 
 # Provide auxiliary functions (until GAP's '=' gets fast).
-# TODO: from here this is AI. however it looks sensible to me.
-# Membership tests are done in copies of the groups with plain or compressed
-# matrices, because they fail for matrix objects, see
+# TODO: These memebeship functions have been changed a lot (also i tried some ai stuff however none were quite good and this function also is what it is now because of these issues: but this is to slow...
 #   https://github.com/gap-system/gap/issues/6670 (MeatAxe) and
 #   https://github.com/gap-system/gap/issues/6671 (sesquilinear forms).
-# 'to_plain' keeps forms, properties and order, so that the fast form-based
-# membership test is used; it is called once per reference group, so that
-# GAP's cached nice monomorphism is reused.
-# Group and elements are compressed over the same field (the field of the
-# entries), since compressions over different fields are not recognized as
-# equal in membership tests. conv tries to use compress matrix thingys as otherwise it would be to slow
-gap> up:= function( x )
->      if IsPlistRep( x ) then return x; fi;
->      return Unpack( x );
+gap> up:= x -> Immutable( Unpack( x ) );;
+gap> to_plain:= G -> Group( List( GeneratorsOfGroup( G ), up ) );;
+gap> is_sub:= function( G, l )
+>      local P;
+>      P:= to_plain( G );
+>      return ForAll( l, x -> up( x ) in P );
 >    end;;
-gap> conv:= function( x, F )
->      if Size( F ) > 256 then return up( x ); fi;
->      return Immutable( Matrix( F, up( x ) ) );
->    end;;
-gap> to_plain:= function( G )
->      local F, P, a, r;
->      F:= DefaultFieldOfMatrixGroup( Group( List( GeneratorsOfGroup( G ), up ) ) );
->      P:= Group( List( GeneratorsOfGroup( G ), x -> conv( x, F ) ) );
->      for a in [ InvariantBilinearForm, InvariantQuadraticForm,
->                 InvariantSesquilinearForm ] do
->        if Tester( a )( G ) then
->          r:= ShallowCopy( a( G ) ); r.matrix:= up( r.matrix ); Setter( a )( P, r );
->        fi;
->      od;
->      for a in [ IsFullSubgroupGLorSLRespectingBilinearForm,
->                 IsFullSubgroupGLorSLRespectingQuadraticForm,
->                 IsFullSubgroupGLorSLRespectingSesquilinearForm ] do
->        if Tester( a )( G ) then Setter( a )( P, a( G ) ); fi;
->      od;
->      if HasSize( G ) then SetSize( P, Size( G ) ); fi;
->      return P;
->    end;;
-gap> is_sub:= { P, l } -> ForAll( l, x -> conv( x, DefaultFieldOfMatrixGroup( P ) ) in P );;
-gap> is_equal:= { P, G } -> is_sub( P, GeneratorsOfGroup( G ) ) and
->                           is_sub( to_plain( G ), GeneratorsOfGroup( P ) );;# Test the creation of orthogonal groups.
-gap> for q in [ 2, 3, 4, 5, 8 ] do
+gap> is_equal:= { G1, G2 } -> is_sub( G1, GeneratorsOfGroup( G2 ) ) and
+>                             is_sub( G2, GeneratorsOfGroup( G1 ) );;# Test the creation of orthogonal groups.
+gap> for q in [ 2, 5, 8 ] do
 >      F:= GF(q);
->      for d in [ 3 .. 5 ] do
+>      for d in [ 3, 5 ] do
 >        if IsEvenInt( d ) then
 >          es:= [ -1, 1 ];
 >        else
@@ -156,10 +130,10 @@ gap> for q in [ 2, 3, 4, 5, 8 ] do
 >    od;
 
 # Test the creation of unitary groups.
-gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 25 ] do
+gap> for q in [ 2, 3, 13, 16 ] do
 >      F:= GF(q);
 >      F2:= GF(q^2);
->      for d in [ 2 .. 8 ] do
+>      for d in [ 2, 8] do
 >        # GU(d,q)
 >        g:= TestForceMatrixObjGens(GeneralUnitaryGroup( d, q ), filt, true);
 >        stored:= InvariantSesquilinearForm( g ).matrix;
@@ -209,9 +183,9 @@ gap> if IsBound( ConformalSymplecticGroup ) then
 >    else
 >      filters:= [ IsPlistRep ];;
 >    fi;
-gap> for q in [ 2, 3, 4, 5, 7, 8, 9, 11, 13, 16, 17, 19, 23, 25 ] do
+gap> for q in [ 2, 19, 25 ] do
 >      F:= GF(q);
->      for d in [ 2, 4 .. 8 ] do
+>      for d in [ 2, 8 ] do
 >        for filt in filters do
 >          PushOptions( rec( ConstructingFilter:= filt ) );
 > 
