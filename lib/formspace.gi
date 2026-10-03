@@ -121,6 +121,7 @@ FORMS_FindCyclicGroupElementAndScalars := function(Gens, Lambdas, n)
     return Concatenation([best_known_element, best_known_scalar], best_known_res, [runs_max]);
 end;
 
+## TODO: currently broken for IsGenericMatrixRep matrix objs.
 # turns the (jn) vector vec in F^{jn} and returns a F^{j times n} matrix, ref is a refrence matrix, used to create the zero Matrix.
 FORMS_VectorReorganize := function(vec, j, F, n, ref)
     local A, i;
@@ -144,7 +145,8 @@ FORMS_MatrixReorganize := function(mat, j, F, n)
 end;
 
 # given j times n matrices over field F, this tries to compute a linear combination of the matrices such that their sum is zero.
-# TODO: maybe make this function more efficient by only considereing some vectors, a better optimatizion however, would be to not even generate the unused equations
+# TODO: maybe make this function more efficient by only considereing some vectors, a better optimatizion however, would be to not even generate the unused equations. 
+# TODO: as we are only really intersted in avoiding linearly dependent entreis, we might be able to speed up this function a lot.
 FORMS_SolveMatrixSystem := function(mats, j, n, F)
     local eqs, mat, sol, out;
     eqs := [];
@@ -159,12 +161,6 @@ FORMS_FrobSpin := function(Images, spin_elem, frob_base_blocks, n, F)
     local A, j, i, k, end_pos, Images_lists, v;
     j := Size(frob_base_blocks);
     A := ZeroMutable(spin_elem);
-    # Images_lists := List(Images, function(v)
-    #     if IsPlistVectorRep(v) then
-    #         return Unpack(v);
-    #     fi;
-    #     return v;
-    # end);
     CopySubMatrix(Images, A, [1..j], frob_base_blocks, [1..n], [1..n]);
     for i in [1..j] do
         if i = j then
@@ -175,6 +171,7 @@ FORMS_FrobSpin := function(Images, spin_elem, frob_base_blocks, n, F)
         # causes error if A is matrix obj and Images is plain list... :(( 
         # A[frob_base_blocks[i]] := Images[i];
         for k in [(frob_base_blocks[i] + 1)..end_pos] do
+            # TODO: this would also break for IsGenericMatrixRep
             v := A[k - 1]*spin_elem ;
             if IsPlistVectorRep(v) then
                 v := Unpack(v);
@@ -186,6 +183,7 @@ FORMS_FrobSpin := function(Images, spin_elem, frob_base_blocks, n, F)
 end;
 
 # Evaluates the univariate polynomial p (given as coefficients) in the matrix g \in F^{n\times n}. frob_base = FrobeniusNormalForm(g) must be satisfied and frob_base_inv = Inverse(FrobeniusNormalForm(g)[2]). The reason these two parameters are given, and not computed in the function itself is to not compute FrobeniusNormalForm(g) multiple times when evaluating multiple polynomials in g.
+# TODO: this function to evaluate any polynomial with a matrix seems to be much faster than using gaps f(x) way of doing it. I want to make an issue to fix this.
 FORMS_EvaluatePolynomialWithFrobenius := function(p, g, frob_base, frob_base_inv, F, n) 
     local ws, C, i, end_pos, j, k;
     j := Size(frob_base[3]);
@@ -196,7 +194,7 @@ FORMS_EvaluatePolynomialWithFrobenius := function(p, g, frob_base, frob_base_inv
         # Print(aa);
     od;
     C := FORMS_FrobSpin(ws, g, frob_base[3], n, F);
-    # TODO: this function is used to build the condition matrices, however since we are only interested in the kernels of these matrices and C is an invertible matrix we can probably eliminate this multiplication and do it at a later stage?
+    # TODO: this function is used to build the condition matrices, however since we are only interested in the kernels of these matrices and C is an invertible matrix we can probably eliminate this multiplication and do it at a later stage? I have tested this and it produes weird duplicate sooutions, anyways this should be investigaged.. as it would probably be faster..
     return frob_base_inv * C;
 end;
 
@@ -287,6 +285,7 @@ FORMS_FilterBilinearForms := function(Forms, F, n)
     fi;
     # TODO: solve this in some efficient way that does not formulate this by solving sets of linear equations of matrices. Instead it would be better to gradually consider entries of the matrices. Then use some heuristic to determine we are done and just check wether the resulting matrices are infact symmetric. this should be faster because now worst case we are solving a system of linear equations that consists of n^2 equations and Size(Forms) indeterminates.
     # TODO: maybe do these todos for all characteristics?
+    # TODO: for char 2 i am quite confused what the difference between a symmetric and symplectic form is. A^tr = -A or A^tr = A is the same condition in that case, but in the implementation of FORMS_IsSymplectic we also check if the diagonal only consists of zeros or not. What we could do as a second step after we obtain all the symmetric matrices with this code, is make an extra system of equations just to try and make the diagonal entries zero. THis would probably be more correct!!
 
     if Size(Forms) = 1 then
         if FORMS_IsSymplecticMatrix(Forms[1], F) then
@@ -362,7 +361,7 @@ FORMS_FilterUnitaryForms := function(Forms, F, n, hom)
         # Base := MutableBasis(GF(q), [ZeroMatrix(GF(q), n, n)]);
         
         # Base := MutableBasis(GF(q), [], ZeroVector(GF(q), n));
-        gf_base := BasisVectors(Basis(GF(GF(q), 2)))[2];
+        gf_base := BasisVectors(Basis(GF(GF(q), 2)))[2]; # TODO this code works for GF(..) but might be troublesome if one decides to use a different field implenetation like Lübecks standardFFE
         hgf_base := hom(gf_base);
         for FF in Forms do
             tr_form := TransposedMat(FF^hom);
@@ -378,7 +377,9 @@ FORMS_FilterUnitaryForms := function(Forms, F, n, hom)
 
     # the idea for char 2 is to solve the semiliner system of equations. we take a GF(q) basis of GF(q^2) namely <1, delta> and express n times n matrices with this basis. 
 
-    # TODO: this function is potentially really slow, it would be much better two only take a few equations and constain the problem instead of taking the entire n times n matrix. One such example would be the form space preserved by G := Group(SU(200, 2^2).1) then Size(Forms) = 38420 consisting of 200x200 matrices. For cases such as this it might also be good to just have some function that tries to find one random non-deg form instead of generating random ones
+    # TODO: this function is potentially really slow, it would be much better to only take a few equations and constain the problem instead of taking the entire n times n matrix. One such example would be the form space preserved by G := Group(SU(200, 2^2).1) then Size(Forms) = 38420 consisting of 200x200 matrices. For cases such as this it might also be good to just have some function that tries to find one random non-deg form instead of generating random ones
+
+    # TODO: even though i have not tested it, i am almost 99.9 percent certain that this entire code breaks for Matrix Objs, especially IsGenericMatrixRep
 
     small_field := GF(q);
     big_field := GF(q^2);
@@ -517,11 +518,13 @@ FORMS_ReturnFormspace := function(needs_checking, W, g_res, g_star_inv_scaled, L
 end;
 
 # Returns formspace preserved by the group <Gens> modulo Lambdas. Unitary says wheter to look for unitary forms or not. hom can be the Field Automorphism of order two. g_res = [g, Lambda_g, ## The elements of ## FrobeniusNormalForm(g)]. Where g is randomly determenied. g_inv_frob = Inverse(FrobeniusNormalForm(g)[2]). g_star_inv_scaled = g^{-*} * Lambda_g, g_star_inv_scaled_frob = FrobeniusNormalForm(g^{-*} * Lambda_g), frob_base_inv_star = Inverse(g_star_inv_scaled_frob[2]). d = Size(Gens), F is base field and n is the matrix dimension. 
+# TODO: another good idea, might be to add a function that given forms and the group generators quickly determines some constraints on the formspace by multiplying through with some vector and seeing what constraints this gives. I dont think that this is asymptotically faster than what we are doing right now, but it might be faster anyways, as much of the time is spent on building the conditions matrix system of linear equations that then is solved for computing the preserved forms. Now these conditions systems very often directly yield a form space that only contains 1 or 2 elements or something like that so it would be nice to quickly be done in such cases. as an extra speed up, maybe we take a row of one of the forms to be the tst vector to save extra matrix vector multiplications.
+# TODO: another todo would be to read out the groups arguments before doing any computations at all. This way the function could be really fast for example when computing for SP, SU and so on. 
 FORMS_FormspaceInternal := function(Gens, Lambdas, unitary, hom, g_res, g_inv_frob, g_star_inv_scaled, g_star_inv_scaled_frob, frob_base_inv_star, d, F, n)
     local k, i, W, first, j, Cond, Conds, h_star, h, w, O, A, failed_check, nspace, vec, stagnatiton, stagnation_max, old_kernel_size, nspace_size;
     first := true;
    
-    ## after computing 5 kernels and the formspace not getting smaller, assume that all forms have been found.
+    ## after computing 5 kernels and the formspace not getting smaller, assume that all forms have been found. this is a made up number idk what would be a good choice.
     old_kernel_size := n + 1;
     stagnatiton := 0;
     stagnation_max := 2; # test three matrices
@@ -578,7 +581,7 @@ FORMS_FormspaceInternal := function(Gens, Lambdas, unitary, hom, g_res, g_inv_fr
 
     if O = false then
         # TODO: cyclic matrix conditition and example Group where this is needed if such a group exists. Can only happen for a group that does not preserve non-deg form but preserves deg form i think.
-        # TODO: one could also do this instead of checking if forms are preserved however this seems slower
+        # TODO: one could also do this instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure.
     fi;
     return O;
 end;
@@ -848,3 +851,7 @@ InstallMethod(PreservedSesquilinearFormsWithScalars, "for matrix groups", [IsMat
 function(G)
     return FORMS_PreservedNonDegFormsWithScalarsOp(G, true, true);
 end);
+
+
+# TODO: add a function that computes the similarities of matrix modules. I think this is not the correct name for that. 
+# TODO: major rewrite/restructioring of this code as it is in my opinion very confusing what does what and there are a million variables flying around.

@@ -13,7 +13,7 @@ if not IsBound(ConformalSymplecticGroup) then
   Add( exclude, "adv/conformal.tst" );
 fi;
 
-# Currently this test is horribly slow and can propabliy only really be run once works well to check G1 = G2 for two groups made up of matrix objects.
+# Currently this test is horribly slow and can propabliy only really be run once it works well to check G1 = G2 for two groups made up of matrix objects.
 Add(exclude, "matobj/duplicates/adv/classic.tst");
 
 TestDirectory(DirectoriesPackageLibrary("forms", "tst"),
