@@ -1,3 +1,15 @@
+#### Store in group: 
+# - formspace object??
+
+
+### algebra thingy computation: 
+# - needed in general:
+# - generators of first module
+# - generators of second module
+# - lazy generators??
+# - Output this type of object???
+
+
 #! @Chapter Formspace
 #! For a matrix Group $G$ consisting of $n\times n$ matrices over the field $K$. Let $\Lambda : G \to K^\times $ be a group homomorphism. Suppose $h : K \to K$ is a field automorphism of $K$. For $g\in G$ we define $g^* := h(g^T)$ where the automorphism $h$ is applied entrywise.
 #! We define the Formspace $\mathcal{F}_h(G, \Lambda) := \{A\in K^{n\times n} \mid gAg^* = \Lambda(g)A \forall g\in G\}$.
@@ -524,7 +536,6 @@ FORMS_FormspaceInternal := function(Gens, Lambdas, unitary, hom, g_res, g_inv_fr
     local k, i, W, first, j, Cond, Conds, h_star, h, w, O, A, failed_check, nspace, vec, stagnatiton, stagnation_max, old_kernel_size, nspace_size;
     first := true;
    
-    ## after computing 5 kernels and the formspace not getting smaller, assume that all forms have been found. this is a made up number idk what would be a good choice.
     old_kernel_size := n + 1;
     stagnatiton := 0;
     stagnation_max := 2; # test three matrices
@@ -584,6 +595,361 @@ FORMS_FormspaceInternal := function(Gens, Lambdas, unitary, hom, g_res, g_inv_fr
         # TODO: one could also do this instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure.
     fi;
     return O;
+end;
+
+# This function tries to find matrices A in <As>, B in <Bs> such that both are ideally cyclic or have very few blocks in ther frobenius normal form.
+## TODO: maybe add extra function if for the As, Bs one being cyclic is equivalent to the other being cyclic/if their block lengths are the same. However i am not sure this will actually make the funciton meaningfully faster...
+FORMS_FindCyclicElement := function(cent_rec)
+    local runs_max, best_length, r, known_As, known_Bs, interval, i, j, op_code, op, add, mult, g, h, frob_g, frob_h, s_g, s_h, s, heuristic_min, heuristic_for_length;
+
+    if cent_rec.d = 1 then
+        ## should never happen, always run special case made for cyclic case.
+        Error("this should not have happend. Please report what caused this bug on the github");
+    fi;
+
+    runs_max := 3*cent_rec.d + 15;
+    # this function is used to evaluate how good a candidate is. Lower is better. TODO: experiment here with different weights for the parameters a and b or maybe non linear function. Does this even matter a lot?? maybe not
+    # a low means that the number of indeterminants in the system of equations is small
+    # b low means we can quickly compute the systems of equations that we want to solve (quick polynomial evaluation)
+    # Ideal is a = b = 1 i.e. we have cyclic element in both. 
+    heuristic_for_length := function(a, b)
+        return a + b;
+    end;
+    heuristic_min := heuristic_for_length(1, 1);
+    add := function(a, b)
+        return a + b;
+    end;
+    mult := function(a, b)
+        return a * b;
+    end;
+
+    best_length := heuristic_for_length(cent_rec.n, cent_rec.n) * 2; ## start at "infinity"
+
+    # TODO: not sure yet if ShallowCopy is needed here.
+    known_As := ShallowCopy(cent_rec.As);
+    known_Bs := ShallowCopy(cent_rec.Bs);
+    
+    for r in [1..runs_max] do
+        i := PseudoRandom([1..cent_rec.d]);
+        interval := [1..cent_rec.d];
+        Remove(interval, i);
+        j := PseudoRandom(interval);
+        op_code := PseudoRandom([1..3]);
+        # I have decided to make addition more likely than multiplication because it is cheaper. I am however not sure if this is a good idea or if it negatively affects the probailty of finding a cyclic element.
+        # TODO: maybe add inverse, minus?, random scaling with root of unity?
+        if op_code = 1 or op_code = 2 then
+            op := add;
+        fi;
+        if op_code = 3 then
+            op := mult;
+        fi;
+        g := op(known_As[i],known_As[j]);
+        frob_g := FrobeniusNormalForm(g);
+        s_g := Size(frob_g[3]);
+        if s_g >= best_length then
+            continue;
+        fi;
+        h := op(known_Bs[i], known_Bs[j]);
+        frob_h := FrobeniusNormalForm(h);
+        s_h := Size(frob_h[3]);
+        s := heuristic_for_length(s_g, s_h);
+        if s < best_length then
+            cent_rec.g := g;
+            cent_rec.h := h;
+            cent_rec.frob_g := frob_g;
+            cent_rec.frob_h := frob_h;
+        fi;
+        if s = heuristic_min then
+            return;
+        fi;
+        known_As[i] := g;
+        known_Bs[i] := h;
+    od;
+end;
+
+# TODO: idk how to document this it would require a long text...
+FORMS_ComputeConditionMatrixForCent := function(cent_rec, vec, cur_a, cur_b)
+    local coeffs_c, coeffs_f, Ps, i, j, b_end, b_start, cpol, fpol, mat;
+
+    coeffs_c := (vec * cur_b) * cent_rec.frob_g_inverse_base;
+    coeffs_f := vec * cent_rec.frob_g_inverse_base;
+
+    j := Size(cent_rec.frob_h[3]);
+    Ps := ZeroMatrix(cent_rec.n*j, cent_rec.n, cur_a);
+   
+    for i in [1..j] do
+        if i = j then
+            b_end := cent_rec.n;
+        else
+            b_end := cent_rec.frob_h[3][i + 1] - 1;
+        fi;
+
+        mat := FORMS_EvaluatePolynomialWithFrobenius(
+            coeffs_c{[cent_rec.frob_h[3][i]..b_end]},
+            cent_rec.h, 
+            cent_rec.frob_h, 
+            cent_rec.frob_h_inverse_base,
+            cent_rec.F, 
+            cent_rec.n
+        ) * cur_b 
+        
+        - FORMS_EvaluatePolynomialWithFrobenius(
+            coeffs_f{[cent_rec.frob_h[3][i]..b_end]}, 
+            cent_rec.h, 
+            cent_rec.frob_h, 
+            cent_rec.frob_h_inverse_base,
+            cent_rec.F, 
+            cent_rec.n
+        );
+        
+        CopySubMatrix(mat, Ps, [1..cent_rec.n], [((i - 1)*cent_rec.n + 1)..(i*cent_rec.n)], [1..cent_rec.n], [1..cent_rec.n]);
+    od;
+    return Ps;
+end;
+
+# builds the centralizing matrices from image vectors and frobenius normal forms and so on, might needs to check if the matrices are actually in the centralizer
+FORMS_ReturnCent := function(cent_rec, needs_checking, W)
+    local O, w, A, i, nrsol, k;
+    O := [];
+    nrsol := NrRows(W);
+    for k in [1..nrsol] do
+        w := W[k];
+        A := cent_rec.frob_g_inverse_base * FORMS_FrobSpin(
+            FORMS_VectorReorganize(
+                w, 
+                Size(cent_rec.frob_g[3]), 
+                cent_rec.F, 
+                cent_rec.n, 
+                cent_rec.frob_g_inverse_base),
+            cent_rec.h, 
+            cent_rec.frob_g[3], 
+            cent_rec.n, 
+            cent_rec.F);
+        # Print(aa);
+        if needs_checking then
+            for i in [1..cent_rec.d] do
+                #todo: store adjoints so they do not have to be reused!
+                if cent_rec.As[i] * A <> A * cent_rec.Bs[i] then
+                    if nrsol = 1 then
+                        return []; #one dimensional case no further computation needed
+                    fi;
+                    return false; # we have some matrices and some non so the main computation needs to go on.
+                fi;
+            od;
+            Add(O, A);
+        else
+            Add(O, A);
+        fi;
+    od;
+    return O;
+end;
+
+# A, B must be matrices with the same number of collumns and over the same field. Their rows span the two vectorspaces. The output of this is another matrix, and its rows are the basis of the intersection.
+# TODO: this function should maybe be documented and made available to the user however i did not spent much time making it good as as far as i can see it almost never gets called.
+FORMS_IntersectVectorSpaces := function(A, B)
+    local C, i, rows, nrcols, InnerProd, OuterProd, Id, r;
+    # TODO: i am not sure which swap here is optimal
+    # compute vw^T
+    InnerProd := function(v, w)
+        local s, i;
+        s := Zero(BaseDomain(v));
+        for i in [1..Length(v)] do
+            s := s + v[i] * w[i];
+        od;
+        return s;
+    end;
+    # compute v^T w
+    OuterProd := function(v, w)
+        local P, i, j;
+        P := ZeroMatrix(Length(v), Length(w), A);
+        for i in [1..Length(v)] do
+            for j in [1..Length(w)] do
+                P[i,j] := v[i] * w[j];
+            od;
+        od;
+        return P;
+    end;
+    
+    if NrRows(A) < NrRows(B) then
+        C := A;
+        A := B;
+        B := A;
+    fi;
+    rows := RowsOfMatrix(A);
+    nrcols := NrCols(A);
+    Id := IdentityMatrix(nrcols, A);
+    for r in rows do
+        Id := Id - Inverse(InnerProd(r, r))*OuterProd(r, r);
+    od;
+    return FORMS_NullspaceMat(B * Id) * B;
+end;
+
+# Effectively does the same as FORMS_CentralizerCyclicCase, but does not build the matrices in the centralizer. Instead this returns only a matrix containing the constraints such that they can be intersected with the already existing constraints and then the matrices can be build from there.
+# TODO: this function should get its own test to check consistency with FORMS_CentralizerCyclicCase. Also because I expect that this might never actually get called.
+FORMS_ComputeCyclicMatCondition := function(cent_rec)
+    local Ps, mat, p, nspace, nrpols, nrrows, space, i, space_rows, accumulated_rows, coll_index, outspaces;
+    nrrows := 0;
+    outspaces := [];
+
+    for p in cent_rec.frob_g[1] do
+        mat := FORMS_EvaluatePolynomialWithFrobenius(
+            CoefficientsOfUnivariatePolynomial(p), 
+            cent_rec.h, 
+            cent_rec.frob_h, 
+            cent_rec.frob_h_inverse_base, 
+            cent_rec.F, 
+            cent_rec.n
+        );
+        nspace := FORMS_NullspaceMat(mat);
+        nrrows := nrrows + NrRows(nspace);
+        Add(outspaces, nspace);
+    od;
+    nrpols := Size(cent_rec.frob_g);
+    Ps := ZeroMatrix(nrrows,cent_rec.n * nrpols,cent_rec.g);
+    accumulated_rows := 1;
+    for i in [1..Size(outspaces)] do
+        space := outspaces[i];
+        space_rows := NrRows(space);
+        coll_index := ((i-1)*cent_rec.n) + 1;
+        CopySubMatrix(space, Ps, [1..space_rows], [accumulated_rows..(accumulated_rows + space_rows - 1)], [1..cent_rec.n], [coll_index..coll_index + cent_rec.n - 1]);
+    od;
+    return Ps;
+end;
+
+# For computing the centralizing matrices in the case that Size(As) = Size(Bs) = 1. Requires that cent_rec.frob_g, cent_rec.frob_h and cent_rec.frob_g_inverse_base, cent_rec.frob_h_inverse_base are set. 
+FORMS_CentralizerCyclicCase := function(cent_rec)
+    # maybe recoginize the trivial group here as a special case
+    local p, mat, outspace, i, j, w, O, W, nrsol, k;
+    outspace := [];
+    for p in cent_rec.frob_g[1] do
+        mat := FORMS_EvaluatePolynomialWithFrobenius(
+            CoefficientsOfUnivariatePolynomial(p), 
+            cent_rec.h, 
+            cent_rec.frob_h, 
+            cent_rec.frob_h_inverse_base, 
+            cent_rec.F, 
+            cent_rec.n
+        );
+        Add(outspace, FORMS_NullspaceMat(mat));
+    od;
+    O := [];
+    for i in [1..Size(outspace)] do
+        W := outspace[i];
+        nrsol := NrRows(W);
+        for k in [1..nrsol] do
+            w := W[k];
+            Add(O, cent_rec.frob_g_inverse_base * FORMS_FrobSpinAtBlock(w, cent_rec.h, cent_rec.frob_g[3], i, cent_rec.n, cent_rec.F)); # this can be used to bound the rank very cheaply, it is smaller than the lenght of the ith frobenius block, furthermore we use the different frobenius blocks, to build a non-deg form we should use a form from each block and add them??
+        od;
+    od;
+    return O;
+end;
+
+# given cent_rec which already should contain cyclic elements g, h in the matrix algebras <As> and <Bs> respectively computes the basis of the centralizing matrices. Also Size(As) = Size(Bs) > 1 should hold.
+FORMS_ComputeCentralizingSpace := function(cent_rec)
+    local old_kernel_size, stagnation, stagnation_max, i, j, cur_b, cur_a, vec, Conds, first, nspace, nspace_size, W, O, exit_loop;
+    first := true;
+    exit_loop := false;
+    old_kernel_size := cent_rec.n + 1;
+    stagnation := 0;
+    stagnation_max := 3; # test four matrices
+
+    cent_rec.frob_g_inverse_base := Inverse(cent_rec.frob_g[2]);
+    cent_rec.frob_h_inverse_base := Inverse(cent_rec.frob_h[2]);
+    for i in [1..cent_rec.d] do
+        if exit_loop then
+            break;
+        fi;
+        cur_a := cent_rec.As[i];
+        cur_b := cent_rec.Bs[i];
+        for j in [1..cent_rec.n] do
+            # vec := RandomVector(F, n); 
+            # idk if random vectors are better...
+            vec := ZeroVector(cent_rec.n, cur_a);
+            vec[j] := One(cent_rec.F);
+            Conds := FORMS_ComputeConditionMatrixForCent(cent_rec, vec, cur_a, cur_b);
+            # Print(aa);
+            # In theory on the first run the cyclic case could be computed however this is slow, also intializing with W with identity matrices seems wasteful so i decided against it.
+            if first then 
+                nspace := FORMS_NullspaceMat(Conds);
+            else
+                nspace := FORMS_NullspaceMat(W * Conds);
+            fi;
+            nspace_size := NrRows(nspace);
+            if nspace_size = 0 then 
+                return [];
+            fi;
+            if not first then
+                W := nspace * W;
+            fi;
+            if first then 
+                W := nspace;
+                first := false;
+            fi;
+            if nspace_size = 1 then
+                exit_loop := true; # exit both loops
+                break;
+            fi;
+            if old_kernel_size = nspace_size then
+                stagnation := stagnation + 1;
+            else 
+                stagnation := 0;
+            fi;
+            old_kernel_size := nspace_size;
+            # try exit early
+            if stagnation = stagnation_max then
+                stagnation := 0;
+                # maybe not do this computation too often..?
+                stagnation_max := stagnation_max * 2;
+                O := FORMS_ReturnCent(cent_rec, true, W);
+                if O <> false then
+                    return O;
+                fi;
+            fi;
+        od;
+    od;
+    
+    O := FORMS_ReturnCent(cent_rec, true, W);
+
+    if O = false then
+        Conds := FORMS_ComputeCyclicMatCondition(cent_rec);
+        W := FORMS_IntersectVectorSpaces(Conds, W);
+        O := FORMS_ReturnCent(cent_rec, false, W);
+        # TODO: one could also do this instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure. 
+    fi;
+    return O;
+end;
+
+# Given As, Bs, this computes a basis of matrices C, such that As_i * C = C * Bs_i. If one chooses As = Bs then this computes the regular centralizer. As far as i know there is a method for this in work by alia i am not sure but have talked about this with her and we have decided that it might be worth it for me to try to implement it anyways.
+ComputeCentralizingSpace := function(As, Bs, F)
+    local d, cent_rec;
+    d := Size(As);
+    if d <> Size(Bs) then
+        Error("Number of given generators must be the same!\n");
+        return;
+    fi;
+    if d = 0 then
+        # Could also return a full basis here... what to do...
+        Error("At least one generator must be given\n");
+        return;
+    fi;
+    # TODO: check if fields line up?
+    cent_rec := rec(As := As, Bs := Bs, F := F, n := NrRows(As[1]), d := d);
+
+    if d = 1 then   
+        cent_rec.g := cent_rec.As[1];
+        cent_rec.h := cent_rec.Bs[1];
+        cent_rec.frob_g := FrobeniusNormalForm(cent_rec.g);
+        cent_rec.frob_h := FrobeniusNormalForm(cent_rec.h);
+        cent_rec.frob_g_inverse_base := Inverse(cent_rec.frob_g[2]);
+        cent_rec.frob_h_inverse_base := Inverse(cent_rec.frob_h[2]);
+        return FORMS_CentralizerCyclicCase(cent_rec);
+    fi;
+
+    FORMS_FindCyclicElement(cent_rec);
+
+    return FORMS_ComputeCentralizingSpace(cent_rec);
+    # Decide what to return
+    # Then be happy.
 end;
 
 # ideas for scalars : 
