@@ -634,15 +634,16 @@ FORMS_FindCyclicElement := function(cent_rec)
         interval := [1..cent_rec.d];
         Remove(interval, i);
         j := PseudoRandom(interval);
-        op_code := PseudoRandom([1..3]);
-        # I have decided to make addition more likely than multiplication because it is cheaper. I am however not sure if this is a good idea or if it negatively affects the probailty of finding a cyclic element.
+        op := mult;
+        # op_code := PseudoRandom([1..3]);
+        # TODO:??? should there even be addition, also maybe make addition more likely than multiplication because it is cheaper. I am however not sure if this is a good idea or if it negatively affects the probailty of finding a cyclic element. Having addition made the benchmarks really slow sometimes so for now we do not have it.
         # TODO: maybe add inverse, minus?, random scaling with root of unity?
-        if op_code = 1 or op_code = 2 then
-            op := add;
-        fi;
-        if op_code = 3 then
-            op := mult;
-        fi;
+        # if op_code = 1 or op_code = 2 then
+        #     op := add;
+        # fi;
+        # if op_code = 3 then
+        #     op := mult;
+        # fi;
         g := op(known_As[i],known_As[j]);
         frob_g := FrobeniusNormalForm(g);
         s_g := Size(frob_g[3]);
@@ -671,7 +672,7 @@ end;
 FORMS_ComputeConditionMatrixForCent := function(cent_rec, vec, cur_a, cur_b)
     local coeffs_c, coeffs_f, Ps, i, j, b_end, b_start, cpol, fpol, mat;
 
-    coeffs_c := (vec * cur_b) * cent_rec.frob_g_inverse_base;
+    coeffs_c := vec * cur_a * cent_rec.frob_g_inverse_base;
     coeffs_f := vec * cent_rec.frob_g_inverse_base;
 
     j := Size(cent_rec.frob_h[3]);
@@ -691,8 +692,7 @@ FORMS_ComputeConditionMatrixForCent := function(cent_rec, vec, cur_a, cur_b)
             cent_rec.frob_h_inverse_base,
             cent_rec.F, 
             cent_rec.n
-        ) * cur_b 
-        
+        ) 
         - FORMS_EvaluatePolynomialWithFrobenius(
             coeffs_f{[cent_rec.frob_h[3][i]..b_end]}, 
             cent_rec.h, 
@@ -700,7 +700,7 @@ FORMS_ComputeConditionMatrixForCent := function(cent_rec, vec, cur_a, cur_b)
             cent_rec.frob_h_inverse_base,
             cent_rec.F, 
             cent_rec.n
-        );
+        ) * cur_b;
         
         CopySubMatrix(mat, Ps, [1..cent_rec.n], [((i - 1)*cent_rec.n + 1)..(i*cent_rec.n)], [1..cent_rec.n], [1..cent_rec.n]);
     od;
@@ -725,7 +725,6 @@ FORMS_ReturnCent := function(cent_rec, needs_checking, W)
             cent_rec.frob_g[3], 
             cent_rec.n, 
             cent_rec.F);
-        # Print(aa);
         if needs_checking then
             for i in [1..cent_rec.d] do
                 #todo: store adjoints so they do not have to be reused!
@@ -853,8 +852,6 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
     stagnation := 0;
     stagnation_max := 3; # test four matrices
 
-    cent_rec.frob_g_inverse_base := Inverse(cent_rec.frob_g[2]);
-    cent_rec.frob_h_inverse_base := Inverse(cent_rec.frob_h[2]);
     for i in [1..cent_rec.d] do
         if exit_loop then
             break;
@@ -863,11 +860,10 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
         cur_b := cent_rec.Bs[i];
         for j in [1..cent_rec.n] do
             # vec := RandomVector(F, n); 
-            # idk if random vectors are better...
+            # idk if random vectors are better... maybe..?
             vec := ZeroVector(cent_rec.n, cur_a);
             vec[j] := One(cent_rec.F);
             Conds := FORMS_ComputeConditionMatrixForCent(cent_rec, vec, cur_a, cur_b);
-            # Print(aa);
             # In theory on the first run the cyclic case could be computed however this is slow, also intializing with W with identity matrices seems wasteful so i decided against it.
             if first then 
                 nspace := FORMS_NullspaceMat(Conds);
@@ -898,8 +894,7 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
             # try exit early
             if stagnation = stagnation_max then
                 stagnation := 0;
-                # maybe not do this computation too often..?
-                stagnation_max := stagnation_max * 2;
+                stagnation_max := stagnation_max * 2; # also a random heuristic by me idk if this is a good choice...
                 O := FORMS_ReturnCent(cent_rec, true, W);
                 if O <> false then
                     return O;
@@ -909,47 +904,54 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
     od;
     
     O := FORMS_ReturnCent(cent_rec, true, W);
-
     if O = false then
         Conds := FORMS_ComputeCyclicMatCondition(cent_rec);
         W := FORMS_IntersectVectorSpaces(Conds, W);
         O := FORMS_ReturnCent(cent_rec, false, W);
-        # TODO: one could also do this instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure. 
+        # TODO: one could also do this always instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure. 
     fi;
     return O;
 end;
 
-# Given As, Bs, this computes a basis of matrices C, such that As_i * C = C * Bs_i. If one chooses As = Bs then this computes the regular centralizer. As far as i know there is a method for this in work by alia i am not sure but have talked about this with her and we have decided that it might be worth it for me to try to implement it anyways.
-ComputeCentralizingSpace := function(As, Bs, F)
+FORMS_BuildCentRecord := function(As, Bs, F) 
     local d, cent_rec;
     d := Size(As);
     if d <> Size(Bs) then
         Error("Number of given generators must be the same!\n");
         return;
     fi;
-    if d = 0 then
-        # Could also return a full basis here... what to do...
-        Error("At least one generator must be given\n");
-        return;
-    fi;
     # TODO: check if fields line up?
     cent_rec := rec(As := As, Bs := Bs, F := F, n := NrRows(As[1]), d := d);
-
     if d = 1 then   
         cent_rec.g := cent_rec.As[1];
         cent_rec.h := cent_rec.Bs[1];
         cent_rec.frob_g := FrobeniusNormalForm(cent_rec.g);
         cent_rec.frob_h := FrobeniusNormalForm(cent_rec.h);
-        cent_rec.frob_g_inverse_base := Inverse(cent_rec.frob_g[2]);
-        cent_rec.frob_h_inverse_base := Inverse(cent_rec.frob_h[2]);
-        return FORMS_CentralizerCyclicCase(cent_rec);
+    else
+        FORMS_FindCyclicElement(cent_rec);
     fi;
+    cent_rec.frob_g_inverse_base := Inverse(cent_rec.frob_g[2]);
+    cent_rec.frob_h_inverse_base := Inverse(cent_rec.frob_h[2]);
+    return cent_rec;
+end;
 
-    FORMS_FindCyclicElement(cent_rec);
-
-    return FORMS_ComputeCentralizingSpace(cent_rec);
-    # Decide what to return
-    # Then be happy.
+FORMS_ComputeCentralizingSpaceOp := function(cent_rec)
+    if cent_rec.d = 1 then   
+        return FORMS_CentralizerCyclicCase(cent_rec);
+    else
+        return FORMS_ComputeCentralizingSpace(cent_rec);
+    fi;
+end;
+# Given As, Bs, this computes a basis of matrices C, such that As_i * C = C * Bs_i. If one chooses As = Bs then this computes the regular centralizer. As far as i know there is a method for this in work by alia i am not sure but have talked about this with her and we have decided that it might be worth it for me to try to implement it anyways.
+ComputeCentralizingSpace := function(As, Bs, F)
+    local cent_rec;
+    if Size(As) = 0 and Size(Bs) = 0 then
+        # Could also return a full basis here... what to do...
+        Error("At least one generator must be given\n");
+        return;
+    fi;
+    cent_rec := FORMS_BuildCentRecord(As, Bs, F);
+    FORMS_ComputeCentralizingSpaceOp(cent_rec);
 end;
 
 # ideas for scalars : 
@@ -978,7 +980,7 @@ end;
 InstallMethod(PreservedFormspace,
     "for matrix group over finite field, with given scalars, and search for unitary forms", [IsMatrixGroup, IsVector and IsFFECollection, IsBool],
     function(G, Lambdas, unitary) 
-        local F, p_exponent, Gens, n, d, first, hom, g_res, g_inv_frob, g_star_inv_unscaled, g_star_inv_scaled_frob, frob_base_inv_star, frob, frob_inv_star, Gen, Gen_adjoint, Gen_adjoint_inv_scaled, frob_inv_star_scaled, frob_inv_star_base_change;
+        local F, p_exponent, Gens1, Gens2, d, hom, cent_rec, i;
         F := DefaultFieldOfMatrixGroup(G);
         p_exponent := DegreeOverPrimeField(F);
         if unitary and (p_exponent mod 2 <> 0) then
@@ -986,38 +988,22 @@ InstallMethod(PreservedFormspace,
             return [];
         fi;
         # check if field is finite?
-        Gens := GeneratorsOfGroup(G);
-        # F := DefaultFieldOfMatrix(Gens[1]);
-        n := NrRows(Gens[1]);
-        d := Size(Gens);
-        hom := fail;
+        Gens1 := GeneratorsOfGroup(G); 
 
-        
+        d := Size(Gens1);
+        Gens2 := [];
         if unitary then
             hom := FrobeniusAutomorphism(F)^(p_exponent/2);
+            for i in [1..d] do
+                Add(Gens2, TransposedMat(Inverse(Gens1[i]))^hom*Lambdas[i]);
+            od;
+        else
+            for i in [1..d] do
+                Add(Gens2, TransposedMat(Inverse(Gens1[i]))*Lambdas[i]);
+            od;
         fi;
-        
-        if d = 1 then
-            Gen := Gens[1];
-            Gen_adjoint := FORMS_CalculateAdjoint(Gen, unitary, hom, n, F);
-            Gen_adjoint_inv_scaled := Lambdas[1]*Inverse(Gen_adjoint);
-            frob := FrobeniusNormalForm(Gen);
-            frob_inv_star_scaled := FrobeniusNormalForm(Gen_adjoint_inv_scaled);
-            frob_inv_star_base_change := Inverse(frob_inv_star_scaled[2]);
-
-            return FORMS_CyclicGroupCase(Gen, Gen_adjoint_inv_scaled, Lambdas[1], unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, Inverse(frob[2]), F, n);
-        fi;
-        #contains  group element, scalar, (factors of minopol), Basis change to Frobenius (v, vg, vg^2, ...), Frobenius block lengths, number of iterations to compute
-        g_res := FORMS_FindCyclicGroupElementAndScalars(Gens, Lambdas, n);
-        g_inv_frob := Inverse(g_res[4]);
-        g_star_inv_unscaled := TransposedMat(Inverse(g_res[1]));
-        if unitary then
-            g_star_inv_unscaled := g_star_inv_unscaled^hom;
-        fi;
-        g_star_inv_scaled_frob := FrobeniusNormalForm(g_star_inv_unscaled * g_res[2]);
-        frob_base_inv_star := Inverse(g_star_inv_scaled_frob[2]);
-
-        return FORMS_FormspaceInternal(Gens, Lambdas, unitary, hom, g_res, g_inv_frob, g_star_inv_unscaled * g_res[2], g_star_inv_scaled_frob, frob_base_inv_star, d, F, n);
+        cent_rec := FORMS_BuildCentRecord(Gens1, Gens2, F);
+        return FORMS_ComputeCentralizingSpaceOp(cent_rec);
     end
 );
 
@@ -1030,59 +1016,30 @@ InstallMethod(PreservedFormspace,
     "for matrix group (finds bilinear/unitary forms modulo 1)",
     [IsMatrixGroup],
     function(G)
-        local F, p_exponent, Gens, n, d, first, hom, g_res, g_inv_frob, g_star_inv_unscaled, g_star_inv_scaled_frob, frob_base_inv_star, Lambdas, Out, i, Gen, Gen_adjoint, Gen_adjoint_inv_scaled, frob, frob_inv_star_scaled, frob_inv_star_base_change;
+        local Out, F, p_exponent, Gens1, Gens2, d, hom, cent_rec;
         Out := [];
         F := DefaultFieldOfMatrixGroup(G);
         p_exponent := DegreeOverPrimeField(F);
         # Todo check if F finite?
-        Gens := GeneratorsOfGroup(G);
-        n := NrRows(Gens[1]);
-        d := Size(Gens);
+        Gens1 := GeneratorsOfGroup(G);
+        Gens2 := List(Gens1, x -> TransposedMat(Inverse(x)));
+        d := Size(Gens1);
         hom := fail;
+        cent_rec := FORMS_BuildCentRecord(Gens1, Gens2, F);
+        Add(Out, FORMS_ComputeCentralizingSpaceOp(cent_rec));
 
-        if d = 1 then
-            Gen := Gens[1];
-            Gen_adjoint := FORMS_CalculateAdjoint(Gen, false, fail, n, F);
-            Gen_adjoint_inv_scaled := One(F)*Inverse(Gen_adjoint); # scaling happens here!!
-            frob := FrobeniusNormalForm(Gen);
-            frob_inv_star_scaled := FrobeniusNormalForm(Gen_adjoint_inv_scaled);
-            frob_inv_star_base_change := Inverse(frob_inv_star_scaled[2]);
-            g_inv_frob := Inverse(frob[2]);
-
-            Add(Out, FORMS_CyclicGroupCase(Gen, Gen_adjoint_inv_scaled, One(F), false, fail, frob, frob_inv_star_scaled, frob_inv_star_base_change, g_inv_frob, F, n));
-
-            if p_exponent mod 2 = 0 then
-                hom := FrobeniusAutomorphism(F)^(p_exponent/2);
-                Gen_adjoint_inv_scaled := Gen_adjoint_inv_scaled^hom;
-                frob_inv_star_base_change := frob_inv_star_base_change^hom;
-                frob_inv_star_scaled[2] := frob_inv_star_scaled[2]^hom;
-
-                Add(Out, FORMS_CyclicGroupCase(Gen, Gen_adjoint_inv_scaled, One(F), true, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, g_inv_frob, F, n));
-            else 
-                Add(Out, []);
-            fi;
-            return Out;
-        fi;
-    
-        Lambdas := [];
-        for i in [1..d] do
-            Add(Lambdas, One(F));
-        od;
-        #contains  group element, scalar, (factors of minopol), Basis change to Frobenius (v, vg, vg^2, ...), Frobenius block lengths, number of iterations to compute
-        g_res := FORMS_FindCyclicGroupElementAndScalars(Gens, Lambdas, n);
-        g_inv_frob := Inverse(g_res[4]);
-        g_star_inv_unscaled := TransposedMat(Inverse(g_res[1]));
-        g_star_inv_scaled_frob := FrobeniusNormalForm(g_star_inv_unscaled); # maybe this causes a bug with scalars
-        frob_base_inv_star := Inverse(g_star_inv_scaled_frob[2]);
-
-        Add(Out, FORMS_FormspaceInternal(Gens, Lambdas, false, hom, g_res, g_inv_frob, g_star_inv_unscaled * g_res[2], g_star_inv_scaled_frob, frob_base_inv_star, d, F, n));
         if p_exponent mod 2 = 0 then
             # is ^hom actually cheaper than computing the frobenius normal form?? investigate! certainly makes the code ugly... oh well
             hom := FrobeniusAutomorphism(F)^(p_exponent/2);
-            g_star_inv_unscaled := g_star_inv_unscaled^hom;
-            g_star_inv_scaled_frob[2] := g_star_inv_scaled_frob[2]^hom;
-            frob_base_inv_star := frob_base_inv_star^hom;
-            Add(Out, FORMS_FormspaceInternal(Gens, Lambdas, true, hom, g_res, g_inv_frob, g_star_inv_unscaled * g_res[2], g_star_inv_scaled_frob, frob_base_inv_star, d, F, n));
+            cent_rec.h := cent_rec.h^hom;
+
+            # This line makes it such that cent_rec.frob_h <> FrobeniusNormalForm(cent_rec.h). This is fine during all the computations where cent_rec is used however if someone has trouble this might be the case why. To fix this one would also need to apply the homomorphism to the factors of the minimal polynomial which are stored in cent_rec.frob_h[1], however they are never used in the computation so i decided against it.
+            cent_rec.frob_h[2] := cent_rec.frob_h[2]^hom;
+
+            cent_rec.frob_h_inverse_base := cent_rec.frob_h_inverse_base^hom;
+            Gens2 := List(Gens2, x -> x^hom);
+            cent_rec.Bs := Gens2;
+            Add(Out, FORMS_ComputeCentralizingSpaceOp(cent_rec));
         else
             Add(Out, []);
         fi;
