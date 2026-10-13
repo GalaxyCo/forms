@@ -68,71 +68,6 @@ FORMS_EvaluateMatrixPolynomialWithVector := function(F, n, g, v, coeffs)
     return res;
 end;
 
-
-# Given mat in F^{n\times n} F Field, n \in N, mode says whether to apply hom or not. Returns (mat^T)^hom.
-# mode = False \iff mat* := mat^tr, mode = True \iff mat* = komplex_konjugiert(mat^tr)
-FORMS_CalculateAdjoint := function(mat, mode, hom, n, F)
-    local transposed, i, j;
-    transposed := TransposedMat(mat);
-    # ConvertToMatrixRep(transposed, F);
-    if mode = false then
-        return transposed;
-    fi;
-    if mode then
-        return transposed^hom;
-    fi;
-    return fail;
-end;
-
-# tries to find a element g \in <Gens> such that the Frobenius Normal form of g has as few blocks as possible. Lambdas describes a group homomorphism induced by Phi : Gens[i] \mapsto Lambdas[i]
-## TODO: In the case that the scalars are known (the case of this function, a cyclic element from the group algebra should suffice. This could improve the odds of finding a cyclic element for some groups)
-# Returns [g, Phi(g), FrobeniusNormalForm(g), nrOfTries]
-# nrOfTries contains the number of random elements tested before g was found.
-FORMS_FindCyclicGroupElementAndScalars := function(Gens, Lambdas, n)
-    local known_elements, known_scalars, i, j, run, runs_max, best_known_length, best_known_res, best_known_scalar, best_known_element, g, lamb, s, d, res, interval;
-
-    d := Size(Gens);
-
-    # no point to random group generators in cyclic groups.
-    if d = 1 then 
-        return Concatenation([Gens[1], Lambdas[1]], FrobeniusNormalForm(Gens[1]), [-1]); 
-    fi;
-    runs_max := 3*d + 15; # pretty random idk what to put here
-
-    known_elements := ShallowCopy(Gens);
-    known_scalars := ShallowCopy(Lambdas);
-
-    best_known_length := n + 1;
-
-    for run in [1..runs_max] do
-        i := PseudoRandom([1..d]);
-        interval := [1..d];
-        Remove(interval, i);
-        j := PseudoRandom(interval);
-        # TODO: add inverses? seems fine without
-        g := known_elements[i]*known_elements[j];
-        lamb := known_scalars[i]*known_scalars[j];
-        res := FrobeniusNormalForm(g);
-        s := Size(res[3]);
-        if s = 1 then
-            return Concatenation([g, lamb], res, [run]);
-        fi;
-        if s < best_known_length then
-            best_known_length := s;
-            best_known_element := g;
-            best_known_scalar := lamb;
-            best_known_res := res;
-        fi;
-        known_elements[i] := g;
-        known_scalars[i] := lamb;
-    od;
-   
-    if best_known_length = n + 1 then
-        return Concatenation([Gens[1], Lambdas[1]], FrobeniusNormalForm(Gens[1]), [-1]);
-    fi;
-    return Concatenation([best_known_element, best_known_scalar], best_known_res, [runs_max]);
-end;
-
 ## TODO: currently broken for IsGenericMatrixRep matrix objs.
 # turns the (jn) vector vec in F^{jn} and returns a F^{j times n} matrix, ref is a refrence matrix, used to create the zero Matrix.
 FORMS_VectorReorganize := function(vec, j, F, n, ref)
@@ -147,7 +82,7 @@ FORMS_VectorReorganize := function(vec, j, F, n, ref)
 end;
 
 # turns the F^{j times n} matrix into F^{jn} vectorargument
-FORMS_MatrixReorganize := function(mat, j, F, n)
+FORMS_VectorReorganize := function(mat, j, F, n)
     local vec, i;
     vec := ZeroVector(F, j*n); ## TODO: here a function that given a matrix makes the correct vector type is useful
     for i in [1..j] do
@@ -206,34 +141,8 @@ FORMS_EvaluatePolynomialWithFrobenius := function(p, g, frob_base, frob_base_inv
         # Print(aa);
     od;
     C := FORMS_FrobSpin(ws, g, frob_base[3], n, F);
-    # TODO: this function is used to build the condition matrices, however since we are only interested in the kernels of these matrices and C is an invertible matrix we can probably eliminate this multiplication and do it at a later stage? I have tested this and it produes weird duplicate sooutions, anyways this should be investigaged.. as it would probably be faster..
+    # TODO: this function is used to build the condition matrices, however since we are only interested in the kernels of these matrices and C is an invertible matrix we can probably eliminate this multiplication and do it at a later stage? I have tested this and it produes weird duplicate solutions, anyways this should be investigaged.. as it would probably be faster..
     return frob_base_inv * C;
-end;
-
-# This computes (and returns) the matrix \mathcal{P}_{h, u} from the bachelors thesis.
-# Here we have u, h \in F^{n\times n}, h_star = h^*, scalar_h = \lambda_h, g_star_inv_scaled = g^{-*}*lambda_g, frob_base = FrobeniusNormalForm(g^{-*}), frob_base_inv = Inverse(FrobeniusNormalForm(g)[2]), frob_base_inv_star = Inverse(frob_base[2]). The reason we to give so many parameters is to avoid computing the same matrices multiple times. TODO: better names!!!!!!
-FORMS_ComputeConditionMatrixFrob := function(u, h, h_star, scalar_h, g_star_inv_scaled, frob_base, frob_base_inv, frob_base_inv_star, F, n)
-    local coeffs_c, coeffs_f, Ps, i, j, b_end, b_start, cpol, fpol, mat;
-    coeffs_c := (u * h) * frob_base_inv;
-    coeffs_f := (u * frob_base_inv) * scalar_h;
-    j := Size(frob_base[3]);
-    Ps := ZeroMatrix(n*j, n, h);
-   
-    for i in [1..j] do
-        if i = j then
-            b_end := n;
-        else
-            b_end := frob_base[3][i + 1] - 1;
-        fi;
-        
-        # Ps{[((i - 1)*n + 1)..(i*n)]}{[1..n]} :=
-        #     FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
-        # Print(aa);
-        mat := FORMS_EvaluatePolynomialWithFrobenius(coeffs_c{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n) * h_star - FORMS_EvaluatePolynomialWithFrobenius(coeffs_f{[frob_base[3][i]..b_end]}, g_star_inv_scaled, frob_base, frob_base_inv_star, F, n);
-        
-        CopySubMatrix(mat, Ps, [1..n], [((i - 1)*n + 1)..(i*n)], [1..n], [1..n]);
-    od;
-    return Ps;
 end;
 
 ## similar to FORMS_FrobSpin but only spins one block namely that of block_index
@@ -466,135 +375,6 @@ FORMS_FilterUnitaryForms := function(Forms, F, n, hom)
         Add(out, tmp);
     od;
     return out;
-end;
-
-# Compute the formspace for cyclic matrix group. 
-# TODO: optimizations:
-# this function (sometimes) yields a very large formspace 
-# to better recognize forms in this case it would be good to add a function that does not do this (since we only care about non degenerate classical forms). to find a bilinear/symplectic/hermitian form we can just compute a invertibe matrix S such that gS = Sg^{-*} (with frobenius normal form) and hope that S + S^*, S - S^* are also inevertible. Then we have found symmetric/symplectic non degenrate forms This seems like a good idea? idk
-FORMS_CyclicGroupCase := function(Gen, Gen_adjoint_inv_scaled, Lambdas, unitary, hom, frob, frob_inv_star_scaled, frob_inv_star_base_change, frob_inv_base_change, F, n)
-    # maybe recoginize the trivial group here as a special case
-    local p, mat, outspace, i, j, w, OutForms, W, nrsol, k;
-
-    outspace := [];
-    for p in frob[1] do
-        mat := FORMS_EvaluatePolynomialWithFrobenius(CoefficientsOfUnivariatePolynomial(p), Gen_adjoint_inv_scaled * Lambdas, frob_inv_star_scaled, frob_inv_star_base_change, F, n);
-        Add(outspace, FORMS_NullspaceMat(mat));
-    od;
-    OutForms := [];
-    for i in [1..Size(outspace)] do
-        W := outspace[i];
-        # if IsPlistMatrixRep(W) and IsRowListMatrix(W) then
-        #     W := List(W);
-        # fi;
-        nrsol := NrRows(W);
-        for k in [1..nrsol] do
-            w := W[k];
-            Add(OutForms, frob_inv_base_change * FORMS_FrobSpinAtBlock(w, Gen_adjoint_inv_scaled, frob[3], i, n, F)); # this can be used to bound the rank very cheaply, it is smaller than the lenght of the ith frobenius block, furthermore we use the different frobenius blocks, to build a non-deg form we should use a form from each block and add them??
-        od;
-    od;
-    return OutForms;
-end;
-
-
-# builds the forms from image vectors and frobenius normal forms and so on, might needs to check if the forms are actually preserved forms
-FORMS_ReturnFormspace := function(needs_checking, W, g_res, g_star_inv_scaled, Lambdas, unitary, hom, Gens, d, F, g_inv_frob, n)
-    local O, w, A, i, nrsol, k;
-    # no kernel, return empty
-    O := [];
-    # to enumerate over the matrix rows, we turn into a list
-    # if IsPlistMatrixRep(W) and IsRowListMatrix(W) then
-    #     W := List(W);
-    # fi;
-    nrsol := NrRows(W);
-    for k in [1..nrsol] do
-        w := W[k];
-        A := g_inv_frob * FORMS_FrobSpin(FORMS_VectorReorganize(w, Size(g_res[5]), F, n, g_inv_frob), g_star_inv_scaled, g_res[5], n, F);
-        if needs_checking then
-            for i in [1..d] do
-                #todo: store adjoints so they do not have to be reused!
-                if Gens[i] * A * FORMS_CalculateAdjoint(Gens[i], unitary, hom, n, F) <> Lambdas[i] * A then
-                    if nrsol = 1 then
-                        return []; #one dimensional case no further computation needed
-                    fi;
-                    return false;
-                fi;
-                # Print(aa);
-            od;
-            Add(O, A);
-        else
-            Add(O, A);
-        fi;
-    od;
-    return O;
-end;
-
-# Returns formspace preserved by the group <Gens> modulo Lambdas. Unitary says wheter to look for unitary forms or not. hom can be the Field Automorphism of order two. g_res = [g, Lambda_g, ## The elements of ## FrobeniusNormalForm(g)]. Where g is randomly determenied. g_inv_frob = Inverse(FrobeniusNormalForm(g)[2]). g_star_inv_scaled = g^{-*} * Lambda_g, g_star_inv_scaled_frob = FrobeniusNormalForm(g^{-*} * Lambda_g), frob_base_inv_star = Inverse(g_star_inv_scaled_frob[2]). d = Size(Gens), F is base field and n is the matrix dimension. 
-# TODO: another good idea, might be to add a function that given forms and the group generators quickly determines some constraints on the formspace by multiplying through with some vector and seeing what constraints this gives. I dont think that this is asymptotically faster than what we are doing right now, but it might be faster anyways, as much of the time is spent on building the conditions matrix system of linear equations that then is solved for computing the preserved forms. Now these conditions systems very often directly yield a form space that only contains 1 or 2 elements or something like that so it would be nice to quickly be done in such cases. as an extra speed up, maybe we take a row of one of the forms to be the tst vector to save extra matrix vector multiplications.
-# TODO: another todo would be to read out the groups arguments before doing any computations at all. This way the function could be really fast for example when computing for SP, SU and so on. 
-FORMS_FormspaceInternal := function(Gens, Lambdas, unitary, hom, g_res, g_inv_frob, g_star_inv_scaled, g_star_inv_scaled_frob, frob_base_inv_star, d, F, n)
-    local k, i, W, first, j, Cond, Conds, h_star, h, w, O, A, failed_check, nspace, vec, stagnatiton, stagnation_max, old_kernel_size, nspace_size;
-    first := true;
-   
-    old_kernel_size := n + 1;
-    stagnatiton := 0;
-    stagnation_max := 2; # test three matrices
-    for i in [1..d] do
-        h := Gens[i];
-        h_star := FORMS_CalculateAdjoint(h, unitary, hom, n, F);
-        for j in [1..n] do
-            # vec := RandomVector(F, n); # does not seem to be better
-            vec := g_res[4][j];
-            Conds := 
-                FORMS_ComputeConditionMatrixFrob(vec, h, h_star, Lambdas[i], g_star_inv_scaled, g_star_inv_scaled_frob, g_inv_frob, frob_base_inv_star, F, n);
-            # Print(aa);
-            if not first then
-                nspace := FORMS_NullspaceMat(W * Conds);
-                nspace_size := Length(nspace);
-                if nspace_size = 0 then 
-                    return [];
-                fi;
-                W := nspace * W;
-            fi;
-            if first then
-                nspace := FORMS_NullspaceMat(Conds);
-                nspace_size := Length(nspace);
-                if nspace_size = 0 then 
-                    return [];
-                fi;
-                W := nspace;
-                first := false;
-            fi;
-            if nspace_size = 1 then
-                break;
-            fi;
-            if old_kernel_size = nspace_size then
-                stagnatiton := stagnatiton + 1;
-            else 
-                stagnatiton := 0;
-            fi;
-            old_kernel_size := nspace_size;
-            # try exit early
-            if stagnatiton = stagnation_max then
-                stagnatiton := 0;
-                # maybe not do this computation too often..?
-                # stagnation_max := stagnation_max * 2;
-                O := FORMS_ReturnFormspace(true, W, g_res, g_star_inv_scaled, Lambdas, unitary, hom, Gens, d, F, g_inv_frob, n);
-                if O <> false then
-                    return O;
-                fi;
-            fi;
-        od;
-    od;
-    
-    # TODO: only check if W one dimensional or cyclic group element condition is not met, i think this can be determined from frob normal forms if we even need to do this.
-    O := FORMS_ReturnFormspace(true, W, g_res, g_star_inv_scaled, Lambdas, unitary, hom, Gens, d, F, g_inv_frob, n);
-
-    if O = false then
-        # TODO: cyclic matrix conditition and example Group where this is needed if such a group exists. Can only happen for a group that does not preserve non-deg form but preserves deg form i think.
-        # TODO: one could also do this instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure.
-    fi;
-    return O;
 end;
 
 # This function tries to find matrices A in <As>, B in <Bs> such that both are ideally cyclic or have very few blocks in ther frobenius normal form.
@@ -1176,5 +956,5 @@ function(G)
 end);
 
 
-# TODO: add a function that computes the similarities of matrix modules. I think this is not the correct name for that. 
-# TODO: major rewrite/restructioring of this code as it is in my opinion very confusing what does what and there are a million variables flying around.
+# TODO: another good idea, might be to add a function that given scalars and the group generators quickly determines some constraints on the formspace by multiplying through with some vector and seeing what constraints this gives. I dont think that this is asymptotically faster than what we are doing right now, but it might be faster anyways, as much of the time is spent on building the conditions matrix system of linear equations that then is solved for computing the preserved forms. Now these conditions systems very often directly yield a form space that only contains 1 or 2 elements or something like that so it would be nice to quickly be done in such cases. as an extra speed up, maybe we take a row of one of the forms to be the tst vector to save extra matrix vector multiplications.
+# TODO: another todo would be to read out the groups arguments before doing any computations at all. This way the function could be really fast for example when computing for SP, SU and so on. 
