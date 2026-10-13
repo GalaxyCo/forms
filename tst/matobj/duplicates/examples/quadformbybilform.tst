@@ -5,7 +5,7 @@ gap> mat := ToMatObj([ [ Z(3^2)^7, Z(3)^0, Z(3^2)^2, 0*Z(3), Z(3^2)^5 ],
 >    [ Z(3^2)^2, Z(3^2)^6, Z(3^2)^7, Z(3^2)^2, Z(3^2)^2 ], 
 >    [ 0*Z(3), Z(3^2)^5, Z(3^2)^2, Z(3^2)^6, Z(3^2)^7 ], 
 >    [ Z(3^2)^5, Z(3^2)^2, Z(3^2)^2, Z(3^2)^7, Z(3) ] ], GF(9));
-<5x5-matrix over GF(3^2)>
+<5x5 plist matrix over GF(3^2)>
 gap> form := BilinearFormByMatrix(mat,GF(9));
 < bilinear form >
 gap> Q := QuadraticFormByBilinearForm(form);
@@ -13,7 +13,7 @@ gap> Q := QuadraticFormByBilinearForm(form);
 gap> Display(form);
 Bilinear form
 Gram Matrix:
-<immutable 5x5-matrix over GF(3^2):
+<immutable 5x5 plist matrix over GF(3^2):
 [[ Z(3^2)^7, Z(3)^0, Z(3^2)^2, 0*Z(3), Z(3^2)^5 ]
  [ Z(3)^0, Z(3^2)^7, Z(3^2)^6, Z(3^2)^5, Z(3^2)^2 ]
  [ Z(3^2)^2, Z(3^2)^6, Z(3^2)^7, Z(3^2)^2, Z(3^2)^2 ]
@@ -23,7 +23,7 @@ Gram Matrix:
 gap> Display(Q);
 Quadratic form
 Gram Matrix:
-<immutable 5x5-matrix over GF(3^2):
+<immutable 5x5 plist matrix over GF(3^2):
 [[ Z(3^2)^7, Z(3), Z(3^2)^6, 0*Z(3), Z(3^2) ]
  [ 0*Z(3), Z(3^2)^7, Z(3^2)^2, Z(3^2), Z(3^2)^6 ]
  [ 0*Z(3), 0*Z(3), Z(3^2)^7, Z(3^2)^6, Z(3^2)^6 ]

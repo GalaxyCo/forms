@@ -3,7 +3,7 @@ gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> mat := 
 > ToMatObj([[Z(2)^0,Z(2)^0,0*Z(2),0*Z(2)],[0*Z(2),Z(2)^0,0*Z(2),0*Z(2)], 
 >  [0*Z(2),0*Z(2),0*Z(2),Z(2)^0],[0*Z(2),0*Z(2),0*Z(2),0*Z(2)]], GF(2));
-<4x4-matrix over GF(2)>
+<4x4 plist matrix over GF(2)>
 gap> form := QuadraticFormByMatrix(mat);
 < quadratic form >
 gap> WittIndex(form);

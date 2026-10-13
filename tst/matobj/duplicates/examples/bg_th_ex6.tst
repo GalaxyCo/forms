@@ -4,13 +4,13 @@ gap> V := GF(4)^3;
 ( GF(2^2)^3 )
 gap> mat := ToMatObj([[Z(2^2)^2,Z(2^2),Z(2^2)^2],[Z(2^2)^2,Z(2)^0,Z(2)^0],
 >         [0*Z(2),Z(2)^0,0*Z(2)]], GF(4));
-<3x3-matrix over GF(2^2)>
+<3x3 plist matrix over GF(2^2)>
 gap> qform := QuadraticFormByMatrix(mat, GF(4));
 < quadratic form >
 gap> Display( qform );
 Quadratic form
 Gram Matrix:
-<immutable 3x3-matrix over GF(2^2):
+<immutable 3x3 plist matrix over GF(2^2):
 [[ Z(2^2)^2, Z(2)^0, Z(2^2)^2 ]
  [ 0*Z(2), Z(2)^0, 0*Z(2) ]
  [ 0*Z(2), 0*Z(2), 0*Z(2) ]

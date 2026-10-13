@@ -2,7 +2,7 @@ gap> START_TEST("Forms: matobj/orthogonaltovector.tst");
 gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> ToVecObj := {v, F} -> Vector(F, v);;
 gap> mat := ToMatObj([[0,0,0,-2],[0,0,-3,0],[0,3,0,0],[2,0,0,0]]*Z(7)^0, GF(7));
-<4x4-matrix over GF(7)>
+<4x4 plist matrix over GF(7)>
 gap> form := BilinearFormByMatrix(mat);
 < bilinear form >
 gap> v := ToVecObj([0*Z(7),Z(7)^0,Z(7)^3,Z(7)^5], GF(7));;
@@ -22,7 +22,7 @@ gap> subperp := OrthogonalSubspaceMat(form,sub);
 gap> List(subperp,x->List(sub,y->[x,y]^form));
 [ [ 0*Z(7), 0*Z(7) ], [ 0*Z(7), 0*Z(7) ] ]
 gap> mat := ToMatObj([[1,0,0],[0,0,1],[0,0,0]]*Z(2)^0, GF(2));
-<3x3-matrix over GF(2)>
+<3x3 plist matrix over GF(2)>
 gap> form := QuadraticFormByMatrix(mat);
 < quadratic form >
 gap> v := ToVecObj([Z(2)^0,Z(2)^0,0*Z(2)], GF(2));;

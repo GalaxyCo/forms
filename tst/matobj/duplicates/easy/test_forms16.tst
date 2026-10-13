@@ -4,7 +4,7 @@ gap> q := 5;
 gap> f := GF(q^4);
 GF(5^4)
 gap> mat := Matrix(IsPlistMatrixRep, f, NullMat(3,3,f));
-<3x3-matrix over GF(5^4)>
+<3x3 plist matrix over GF(5^4)>
 gap> mat[1,2] := Z(q^4);
 Z(5^4)
 gap> mat[2,1] := Z(q^4)^(q^2);

@@ -3,13 +3,13 @@ gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> ToVecObj := {v, F} -> Vector(F, v);;
 gap> mat := ToMatObj([[0*Z(5),0*Z(5),0*Z(25),Z(25)^3],[0*Z(5),0*Z(5),Z(25)^3,0*Z(25)],
 >         [0*Z(5),-Z(25)^3,0*Z(5),0*Z(5)],[-Z(25)^3,0*Z(5),0*Z(25),0*Z(25)]], GF(25));
-<4x4-matrix over GF(5^2)>
+<4x4 plist matrix over GF(5^2)>
 gap> form := HermitianFormByMatrix(mat,GF(25));
 < hermitian form >
 gap> Display(form);
 Hermitian form
 Gram Matrix:
-<immutable 4x4-matrix over GF(5^2):
+<immutable 4x4 plist matrix over GF(5^2):
 [[ 0*Z(5), 0*Z(5), 0*Z(5), Z(5^2)^3 ]
  [ 0*Z(5), 0*Z(5), Z(5^2)^3, 0*Z(5) ]
  [ 0*Z(5), Z(5^2)^15, 0*Z(5), 0*Z(5) ]
@@ -22,7 +22,7 @@ gap> form2 := BilinearFormByMatrix(mat,GF(25));
 gap> Display(form2);
 Bilinear form
 Gram Matrix:
-<immutable 4x4-matrix over GF(5^2):
+<immutable 4x4 plist matrix over GF(5^2):
 [[ 0*Z(5), 0*Z(5), 0*Z(5), Z(5^2)^3 ]
  [ 0*Z(5), 0*Z(5), Z(5^2)^3, 0*Z(5) ]
  [ 0*Z(5), Z(5^2)^15, 0*Z(5), 0*Z(5) ]
@@ -33,7 +33,7 @@ true
 gap> Display(IsometricCanonicalForm(form));
 Hermitian form
 Gram Matrix:
-<immutable 4x4-matrix over GF(5^2):
+<immutable 4x4 plist matrix over GF(5^2):
 [[ Z(5)^0, 0*Z(5), 0*Z(5), 0*Z(5) ]
  [ 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5) ]
  [ 0*Z(5), 0*Z(5), Z(5)^0, 0*Z(5) ]
@@ -43,7 +43,7 @@ Witt Index: 2
 gap> Display(IsometricCanonicalForm(form2));
 Bilinear form
 Gram Matrix:
-<immutable 4x4-matrix over GF(5^2):
+<immutable 4x4 plist matrix over GF(5^2):
 [[ 0*Z(5), Z(5)^0, 0*Z(5), 0*Z(5) ]
  [ Z(5)^2, 0*Z(5), 0*Z(5), 0*Z(5) ]
  [ 0*Z(5), 0*Z(5), 0*Z(5), Z(5)^0 ]

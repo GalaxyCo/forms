@@ -16,7 +16,7 @@ true
 gap> Display( form );
 Symplectic form
 Gram Matrix:
-<immutable 6x6-matrix over GF(3):
+<immutable 6x6 plist matrix over GF(3):
 [[ 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ]
  [ 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3) ]
  [ 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0 ]
@@ -25,9 +25,9 @@ Gram Matrix:
  [ 0*Z(3), 0*Z(3), Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
 ]>
 gap> b := BaseChangeToCanonical( form );
-<immutable 6x6-matrix over GF(3)>
+<immutable 6x6 plist matrix over GF(3)>
 gap> Display( b );
-<immutable 6x6-matrix over GF(3):
+<immutable 6x6 plist matrix over GF(3):
 [[ Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
  [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ]
  [ 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3) ]
@@ -36,7 +36,7 @@ gap> Display( b );
  [ 0*Z(3), Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
 ]>
 gap> Display( b * gram * TransposedMat(b) );
-<6x6-matrix over GF(3):
+<6x6 plist matrix over GF(3):
 [[ 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
  [ Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
  [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ]

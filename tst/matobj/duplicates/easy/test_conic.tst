@@ -37,11 +37,11 @@ true
 gap> go := GO(3,8);
 GO(0,3,8)
 gap> mat := ToMatObj(InvariantQuadraticForm( go )!.matrix, GF(8));
-<3x3-matrix over GF(2^3)>
+<3x3 plist matrix over GF(2^3)>
 gap> gapform := QuadraticFormByMatrix( mat, GF(8) );
 < quadratic form >
 gap> b := BaseChangeToCanonical( gapform );
-<immutable 3x3-matrix over GF(2^3)>
+<immutable 3x3 plist matrix over GF(2^3)>
 
 # GO(3,8) has no matrix-object version in GAP, so the group part stays list-based.
 gap> hom := BaseChangeHomomorphism( Unpack(b), GF(8) );

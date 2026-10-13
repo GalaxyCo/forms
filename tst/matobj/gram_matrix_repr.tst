@@ -97,7 +97,7 @@ true
 gap> f := GF(5);
 GF(5)
 gap> mat := Matrix(IsPlistMatrixRep, f, [[1,0],[0,1]] * One(f));
-<2x2-matrix over GF(5)>
+<2x2 plist matrix over GF(5)>
 gap> form := BilinearFormByMatrix(mat, f);
 < bilinear form >
 gap> IsPlistMatrixRep(GramMatrix(form));

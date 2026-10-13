@@ -8,7 +8,7 @@ gap> dim := 5;
 gap> v := f^dim;
 ( GF(5)^5 )
 gap> mat := Matrix(IsPlistMatrixRep, f, IdentityMat(dim,f));
-<5x5-matrix over GF(5)>
+<5x5 plist matrix over GF(5)>
 gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> lines := Subspaces(v,1);

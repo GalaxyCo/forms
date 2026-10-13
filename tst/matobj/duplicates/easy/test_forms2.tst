@@ -3,7 +3,7 @@ gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> f := GF(7);
 GF(7)
 gap> gram := ToMatObj([[-3,0,0,0,0,0],[0,0,3,0,0,0],[0,3,0,0,0,0],[0,0,0,0,0,-1/2],[0,0,0,0,1,0],[0,0,0,-1/2,0,0]]*Z(7)^0, f);
-<6x6-matrix over GF(7)>
+<6x6 plist matrix over GF(7)>
 gap> form := BilinearFormByMatrix(gram,f);
 < bilinear form >
 gap> IsEllipticForm(form);
@@ -13,7 +13,7 @@ gap> TypeOfForm(form);
 gap> Display(form);
 Elliptic bilinear form
 Gram Matrix:
-<immutable 6x6-matrix over GF(7):
+<immutable 6x6 plist matrix over GF(7):
 [[ Z(7)^4, 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ]
  [ 0*Z(7), 0*Z(7), Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ]
  [ 0*Z(7), Z(7), 0*Z(7), 0*Z(7), 0*Z(7), 0*Z(7) ]

@@ -17,7 +17,7 @@ gap> biform := AssociatedBilinearForm(qform);
 gap> Display(biform);
 Bilinear form
 Gram Matrix:
-<immutable 5x5-matrix over GF(2^2):
+<immutable 5x5 plist matrix over GF(2^2):
 [[ 0*Z(2), Z(2^2), Z(2^2), Z(2^2), Z(2^2) ]
  [ Z(2^2), 0*Z(2), Z(2^2)^2, 0*Z(2), Z(2)^0 ]
  [ Z(2^2), Z(2^2)^2, 0*Z(2), Z(2)^0, Z(2)^0 ]

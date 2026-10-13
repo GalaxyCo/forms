@@ -2,7 +2,7 @@ gap> START_TEST("Forms: matobj/issingularvector.tst");
 gap> ToMatObj := {m, F} -> Matrix(IsPlistMatrixRep, F, m);;
 gap> ToVecObj := {v, F} -> Vector(F, v);;
 gap> mat := ToMatObj([[1,0,0,0,0],[0,0,0,0,1],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0]]*Z(8)^0, GF(8));
-<5x5-matrix over GF(2^3)>
+<5x5 plist matrix over GF(2^3)>
 gap> form := QuadraticFormByMatrix(mat);
 < quadratic form >
 gap> v1 := ToVecObj([1,0,0,0,0]*Z(8)^0, GF(8));

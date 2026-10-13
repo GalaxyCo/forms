@@ -10,7 +10,7 @@ GF(5)
 gap> nzero := List([0..q-2],x->Z(q)^x);
 [ Z(5)^0, Z(5), Z(5)^2, Z(5)^3 ]
 gap> mat := Matrix(IsPlistMatrixRep, f, NullMat(2*hdim,2*hdim,f));
-<6x6-matrix over GF(5)>
+<6x6 plist matrix over GF(5)>
 gap> for i in [1..hdim] do
 > entry := Random(nzero);;
 > mat[i,2*hdim-i+1] := entry;

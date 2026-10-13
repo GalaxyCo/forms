@@ -13,7 +13,7 @@ gap> form := BilinearFormByMatrix( gram, gf );
 < bilinear form >
 gap> b := BaseChangeToCanonical( form );;
 gap> Display( b * gram * TransposedMat(b) );
-<6x6-matrix over GF(3):
+<6x6 plist matrix over GF(3):
 [[ 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
  [ Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3), 0*Z(3) ]
  [ 0*Z(3), 0*Z(3), 0*Z(3), Z(3)^0, 0*Z(3), 0*Z(3) ]

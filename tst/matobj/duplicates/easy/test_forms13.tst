@@ -8,7 +8,7 @@ gap> dim := 3;
 gap> v := f^dim;
 ( GF(3^2)^3 )
 gap> mat := Matrix(IsPlistMatrixRep, f, IdentityMat(dim,f));
-<3x3-matrix over GF(3^2)>
+<3x3 plist matrix over GF(3^2)>
 gap> form := QuadraticFormByMatrix(mat,f);
 < quadratic form >
 gap> lines := Subspaces(v,1);
