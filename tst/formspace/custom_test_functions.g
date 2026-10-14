@@ -105,7 +105,7 @@ TestChar2Filter := function()
 end;
 
 TestMatricesAreForms := function(G, Lambdas, unitary, forms)
-    local p_exponent, hom, F, f, g, i, Gens, n, j;
+    local p_exponent, hom, F, f, g, i, Gens, n, j, adj;
     F := DefaultFieldOfMatrixGroup(G);
     Gens := GeneratorsOfGroup(G);
     n := DimensionsMat(Gens[1])[1];
@@ -126,7 +126,11 @@ TestMatricesAreForms := function(G, Lambdas, unitary, forms)
         f := forms[i];
         for j in [1..Size(Gens)] do
             g := Gens[j];
-            if g * f * FORMS_CalculateAdjoint(g, unitary, hom, n, F) <> Lambdas[j] * f then
+            adj := TransposedMat(Inverse(g));
+            if unitary then
+                adj := adj^hom;
+            fi;
+            if g * f * adj <> Lambdas[j] * f then
                 Error("Computed non formspace element ", f, "group " , G, " unitary ", unitary, " Lambdas ", Lambdas);
             fi;
         od;
@@ -150,7 +154,7 @@ end;
 # this is a good idea for testing to see that the presered formspace function actually computes the entire formspace not just a subspace. (this is the function that provides the formsace solutions used in other tests)
 # however maybe we should test the test? this seems a little stupid
 TestComputeFormspaceBruteForce := function(G, Lambdas, unitary)
-    local Gens, i, j, F, n, base, b, g, eqs, p_exponent, ComputeMatrixVectorSpaceBasis, VectorToMatrix, MatrixToVector, sol, out, s, hom, v;
+    local Gens, i, j, F, n, base, b, g, eqs, p_exponent, ComputeMatrixVectorSpaceBasis, VectorToMatrix, MatrixToVector, sol, out, s, hom, v, adj;
     Gens := GeneratorsOfGroup(G);
     n := DimensionsMat(Gens[1])[1];
     F := DefaultFieldOfMatrixGroup(G);
@@ -204,7 +208,11 @@ TestComputeFormspaceBruteForce := function(G, Lambdas, unitary)
     for j in [1..Size(base)] do  
         for i in [1..Size(Gens)] do
             b := base[j];  
-            v :=  MatrixToVector(Gens[i] * b * FORMS_CalculateAdjoint(Gens[i], unitary, hom, n, F) - Lambdas[i] * b, F, n);
+            adj := TransposedMat(Inverse(Gens[i]));
+            if unitary then
+                adj := adj^hom;
+            fi;
+            v :=  MatrixToVector(Gens[i] * b * adj - Lambdas[i] * b, F, n);
             if i = 1 then
                 Add(eqs, v);
             else

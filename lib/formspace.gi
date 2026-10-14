@@ -82,7 +82,7 @@ FORMS_VectorReorganize := function(vec, j, F, n, ref)
 end;
 
 # turns the F^{j times n} matrix into F^{jn} vectorargument
-FORMS_VectorReorganize := function(mat, j, F, n)
+FORMS_MatrixReorganize := function(mat, j, F, n)
     local vec, i;
     vec := ZeroVector(F, j*n); ## TODO: here a function that given a matrix makes the correct vector type is useful
     for i in [1..j] do
