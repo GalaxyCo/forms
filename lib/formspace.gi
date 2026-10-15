@@ -31,9 +31,10 @@ FORMS_NullspaceMat := function(m)
     if n = [] then
         # compressed representations do not support zero rows yet
         if filt = Is8BitMatrixRep or filt = IsGF2MatrixRep then
-            filt := IsPlistMatrixRep;
+            # for now just return one zero vector. this is kind of supid but as i am constantly multiplying the result of this funcion with other matrices it seems nicer than to always have to check if the nullspace is null space = [].
+            return ZeroMatrix(1,NrCols(m),m);
         fi;
-        return NewZeroMatrix(filt, R, 0, NrRows(m));
+        return ZeroMatrix(0,NrCols(m),m);
     fi;
     if not filt(n) then
         n := List(n, function(v)
@@ -526,42 +527,43 @@ end;
 # A, B must be matrices with the same number of collumns and over the same field. Their rows span the two vectorspaces. The output of this is another matrix, and its rows are the basis of the intersection.
 # TODO: this function should maybe be documented and made available to the user however i did not spent much time making it good as as far as i can see it almost never gets called.
 FORMS_IntersectVectorSpaces := function(A, B)
-    local C, i, rows, nrcols, InnerProd, OuterProd, Id, r;
-    # compute vw^T
-    InnerProd := function(v, w)
-        local s, i;
-        s := Zero(BaseDomain(v));
-        for i in [1..Length(v)] do
-            s := s + v[i] * w[i];
-        od;
-        return s;
-    end;
-    # compute v^T w
-    OuterProd := function(v, w)
-        local P, i, j;
-        P := ZeroMatrix(Length(v), Length(w), A);
-        for i in [1..Length(v)] do
-            for j in [1..Length(w)] do
-                P[i,j] := v[i] * w[j];
-            od;
-        od;
-        return P;
-    end;
-    
-    # TODO: i am not sure which swap here is optimal
-   
+    local C, i, nrcols, Id, r, nspace;
+    nrcols := NrCols(A);
+    if NrRows(A) = 0 or NrRows(B) = 0 then
+        # TODO: this is problematic, because 0 times n matrix is not allowed for some matrix reps. For now i just return a zero row vector in that case.
+        if IsGF2MatrixRep(A) or Is8BitMatrixRep(A) then
+            return ZeroMatrix(1, nrcols, A);
+        else
+            return ZeroMatrix(0, nrcols, A);
+        fi;
+    fi;
+    # compute v^Tw    
+    # under the assumption that addition is cheaper than multiplication, this should be slightly cheaper to do this swap. however i think it probably does not matter...
     if NrRows(A) < NrRows(B) then
         C := A;
         A := B;
-        B := A;
+        B := C;
     fi;
-    rows := RowsOfMatrix(A);
-    nrcols := NrCols(A);
-    Id := IdentityMatrix(nrcols, A);
-    for r in rows do
-        Id := Id - Inverse(InnerProd(r, r))*OuterProd(r, r);
-    od;
-    return FORMS_NullspaceMat(B * Id) * B;
+    Id := TransposedMat(FORMS_NullspaceMat(TransposedMat(A))); # this matrix is zero, if and only if we multiply with an element from A
+    if NrRows(Id) = 0 then
+        return B;
+    else
+        nspace := FORMS_NullspaceMat(B * Id);
+        # # Prevents annyoing bugs where this can be the case... and then computing nspace * B gives weird results?? idk why this can even happen...
+        # if ForAll(RowsOfMatrix(nspace), x -> IsZero(x)) then
+        #     return B;
+        # fi;
+    fi;
+    if NrRows(nspace) = 0 then
+        # TODO same as above
+        if IsGF2MatrixRep(A) or Is8BitMatrixRep(A) then
+            return ZeroMatrix(1, nrcols, A);
+        else
+            return ZeroMatrix(0, nrcols, A);
+        fi;
+    fi;
+    return nspace * B;
+    # TODO: maybe make this more efficient by somehow directly computing B * Id in the sense that we expect B to not be a full basis, i.e. safe some 
 end;
 
 # Effectively does the same as FORMS_CentralizerCyclicCase, but does not build the matrices in the centralizer. Instead this returns only a matrix containing the constraints such that they can be intersected with the already existing constraints and then the matrices can be build from there.
