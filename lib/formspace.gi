@@ -527,7 +527,6 @@ end;
 # TODO: this function should maybe be documented and made available to the user however i did not spent much time making it good as as far as i can see it almost never gets called.
 FORMS_IntersectVectorSpaces := function(A, B)
     local C, i, rows, nrcols, InnerProd, OuterProd, Id, r;
-    # TODO: i am not sure which swap here is optimal
     # compute vw^T
     InnerProd := function(v, w)
         local s, i;
@@ -549,6 +548,8 @@ FORMS_IntersectVectorSpaces := function(A, B)
         return P;
     end;
     
+    # TODO: i am not sure which swap here is optimal
+   
     if NrRows(A) < NrRows(B) then
         C := A;
         A := B;
@@ -738,9 +739,9 @@ end;
 ## non-degenerate 
 # - do the things already in the forms package with trace/ analyze minimal and characteristic polynomial DONE! :)
 # - add a function that given a group just tries to return one non-degenerate form as fast as possible.
-# - add a functions for reducible groups that given formspaces, return a random non-deg form; try to compute all non-deg forms
+# - add a functions for reducible groups that given formspaces, return a random non-deg form; try to compute all non-deg forms ?? UnitGroup function by alia?
 ## degenerate : 
-# - do the trick where a group generator with scalar guranteed to be one gets added and compute the eigenvalues of this one these are then all possible choices of scalars, we can even do this a few times to arrow down the possibilities. 
+# - do the trick where a group generator with scalar guranteed to be one gets added and compute the eigenvalues of this one these are then all possible choices of scalars, we can even do this a few times to narrow down the possibilities. 
     ## structure : 
         # 1. find a random element in the group of form ghg^{-1}h^{-1} (i.e.) it has scalar one with as few frobenius blocks (best case cyclic) in the group.
         # 2. we compute the eigenvalues of one part of the condition matrix. TODO: specify
