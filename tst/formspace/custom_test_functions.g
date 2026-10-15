@@ -126,7 +126,7 @@ TestMatricesAreForms := function(G, Lambdas, unitary, forms)
         f := forms[i];
         for j in [1..Size(Gens)] do
             g := Gens[j];
-            adj := TransposedMat(Inverse(g));
+            adj := TransposedMat(g);
             if unitary then
                 adj := adj^hom;
             fi;
@@ -208,7 +208,7 @@ TestComputeFormspaceBruteForce := function(G, Lambdas, unitary)
     for j in [1..Size(base)] do  
         for i in [1..Size(Gens)] do
             b := base[j];  
-            adj := TransposedMat(Inverse(Gens[i]));
+            adj := TransposedMat(Gens[i]);
             if unitary then
                 adj := adj^hom;
             fi;
