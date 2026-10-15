@@ -528,43 +528,6 @@ FORMS_IntersectVectorSpaces := function(A, B)
     local sol;
     sol := SumIntersectionMat(A, B)[2];
     return Matrix(sol, A);
-    # local C, i, nrcols, Id, r, nspace;
-    # nrcols := NrCols(A);
-    # if NrRows(A) = 0 or NrRows(B) = 0 then
-    #     # TODO: this is problematic, because 0 times n matrix is not allowed for some matrix reps. For now i just return a zero row vector in that case.
-    #     if IsGF2MatrixRep(A) or Is8BitMatrixRep(A) then
-    #         return ZeroMatrix(1, nrcols, A);
-    #     else
-    #         return ZeroMatrix(0, nrcols, A);
-    #     fi;
-    # fi;
-    # # compute v^Tw    
-    # # under the assumption that addition is cheaper than multiplication, this should be slightly cheaper to do this swap. however i think it probably does not matter...
-    # if NrRows(A) < NrRows(B) then
-    #     C := A;
-    #     A := B;
-    #     B := C;
-    # fi;
-    # Id := TransposedMat(FORMS_NullspaceMat(TransposedMat(A))); # this matrix is zero, if and only if we multiply with an element from A
-    # if NrRows(Id) = 0 then
-    #     return B;
-    # else
-    #     nspace := FORMS_NullspaceMat(B * Id);
-    #     # # Prevents annyoing bugs where this can be the case... and then computing nspace * B gives weird results?? idk why this can even happen...
-    #     # if ForAll(RowsOfMatrix(nspace), x -> IsZero(x)) then
-    #     #     return B;
-    #     # fi;
-    # fi;
-    # if NrRows(nspace) = 0 then
-    #     # TODO same as above
-    #     if IsGF2MatrixRep(A) or Is8BitMatrixRep(A) then
-    #         return ZeroMatrix(1, nrcols, A);
-    #     else
-    #         return ZeroMatrix(0, nrcols, A);
-    #     fi;
-    # fi;
-    # return nspace * B;
-    # # TODO: maybe make this more efficient by somehow directly computing B * Id in the sense that we expect B to not be a full basis, i.e. safe some 
 end;
 
 # Effectively does the same as FORMS_CentralizerCyclicCase, but does not build the matrices in the centralizer. Instead this returns only a matrix containing the constraints such that they can be intersected with the already existing constraints and then the matrices can be build from there.
