@@ -42,9 +42,7 @@ gap> FORMS_TST_Convert := function(rows, F, rep)
 >     fi;
 >     Error("unknown representation ", rep);
 > end;;
-
-# todo also add "generic" to this, but right now this will not work because RankMat does not work for generic matrices....
-
+gap> 1+1;;# todo also add "generic" to this, but right now this will not work because RankMat does not work for generic matrices....
 gap> FORMS_TST_Reps := ["plist", "compressed", "matobj"];;
 gap> FORMS_TST_CheckOne := function(A, B, F)
 >     local Arows, Brows, C, rows, n, dimU, dimW, dimSum, expected;

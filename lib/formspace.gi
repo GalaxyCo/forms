@@ -31,10 +31,9 @@ FORMS_NullspaceMat := function(m)
     if n = [] then
         # compressed representations do not support zero rows yet
         if filt = Is8BitMatrixRep or filt = IsGF2MatrixRep then
-            # for now just return one zero vector. this is kind of supid but as i am constantly multiplying the result of this funcion with other matrices it seems nicer than to always have to check if the nullspace is null space = []. I am not sure however, best case would be that this can simply not happen. and we can create a 0xn matrix...
-            return ZeroMatrix(1,NrCols(m),m);
+            filt := IsPlistRep;
         fi;
-        return ZeroMatrix(0,NrCols(m),m);
+        return ZeroMatrix(filt, R, 0, NrCols(m));
     fi;
     if not filt(n) then
         n := List(n, function(v)

@@ -1,5 +1,4 @@
 gap> START_TEST("Formspace: preserved_forms_non_trivial_scalars.tst"); 
-true
 gap> G := Sp(4, 5);;
 gap> H := Group(G.1 * Z(5), G.2 * Z(5)^3);
 <matrix group with 2 generators>
