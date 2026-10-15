@@ -707,7 +707,7 @@ ComputeMatrixIntertwiners := function(As, Bs, F)
         return;
     fi;
     cent_rec := FORMS_BuildCentRecord(As, Bs, F);
-    FORMS_ComputeCentralizingSpaceOp(cent_rec);
+    return FORMS_ComputeCentralizingSpaceOp(cent_rec);
 end;
 
 # ideas for scalars : 
