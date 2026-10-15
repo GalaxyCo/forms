@@ -380,14 +380,14 @@ end;
 # This function tries to find matrices A in <As>, B in <Bs> such that both are ideally cyclic or have very few blocks in ther frobenius normal form.
 ## TODO: maybe add extra function if for the As, Bs one being cyclic is equivalent to the other being cyclic/if their block lengths are the same. However i am not sure this will actually make the funciton meaningfully faster...
 FORMS_FindCyclicElement := function(cent_rec)
-    local runs_max, best_length, r, known_As, known_Bs, interval, i, j, op_code, op, add, mult, g, h, frob_g, frob_h, s_g, s_h, s, heuristic_min, heuristic_for_length;
+    local runs_max, best_length, r, known_As, known_Bs, interval, i, j, op_code, op, add, mult, g, h, frob_g, frob_h, s_g, s_h, s, heuristic_min, heuristic_for_length, deg, do_not_use;
 
     if cent_rec.d = 1 then
         ## should never happen, always run special case made for cyclic case.
         Error("this should not have happend. Please report what caused this bug on the github");
     fi;
 
-    runs_max := 3*cent_rec.d + 15;
+    runs_max := 3*cent_rec.d + 10;
     # this function is used to evaluate how good a candidate is. Lower is better. TODO: experiment here with different weights for the parameters a and b or maybe non linear function. Does this even matter a lot?? maybe not
     # a low means that the number of indeterminants in the system of equations is small
     # b low means we can quickly compute the systems of equations that we want to solve (quick polynomial evaluation)
@@ -410,27 +410,51 @@ FORMS_FindCyclicElement := function(cent_rec)
     known_Bs := ShallowCopy(cent_rec.Bs);
     
     for r in [1..runs_max] do
+        do_not_use := false;
         i := PseudoRandom([1..cent_rec.d]);
         interval := [1..cent_rec.d];
         Remove(interval, i);
         j := PseudoRandom(interval);
-        op := mult;
-        # op_code := PseudoRandom([1..3]);
-        # TODO:??? should there even be addition, also maybe make addition more likely than multiplication because it is cheaper. I am however not sure if this is a good idea or if it negatively affects the probailty of finding a cyclic element. Having addition made the benchmarks really slow sometimes so for now we do not have it.
-        # TODO: maybe add inverse, minus?, random scaling with root of unity?
-        # if op_code = 1 or op_code = 2 then
-        #     op := add;
-        # fi;
-        # if op_code = 3 then
+        op_code := PseudoRandom([1..10]);
+        # TODO: maybe add inverse, minus?, random scaling with root of unity? adding seems to make this function work more poorly
+        # if op_code in [1..9] then
         #     op := mult;
         # fi;
+        # if op_code = 10 then
+        #     op := add;
+        # fi;
+        op := mult;
         g := op(known_As[i],known_As[j]);
+       
+       
+        #TODO: ideally this would be done in the formspackage to not waste this nice maximal vector in case it is good. This is another heuristic, where only consider matrices that seem promising, having a maximal vector with at least one large block each. 
+
+        deg := Degree(MaximalVectorMat(g)[2]);
+        if IsBound(cent_rec.frob_g) and deg > Degree(cent_rec.frob_g[1][1]) then
+            do_not_use := true;
+        elif not IsBound(cent_rec.frob_g) and deg < Int(cent_rec.n/2) then
+            do_not_use := true;
+        fi;
+        h := op(known_Bs[i], known_Bs[j]);
+        deg := Degree(MaximalVectorMat(h)[2]);
+        if IsBound(cent_rec.frob_h) and deg > Degree(cent_rec.frob_h[1][1]) then
+            do_not_use := true;
+        elif not IsBound(cent_rec.frob_h) and deg < Int(cent_rec.n/2) then
+            do_not_use := true;
+        fi;
+        h := op(known_Bs[i], known_Bs[j]);
+        if do_not_use then
+            known_As[i] := g;
+            known_Bs[i] := h;
+            continue;
+        fi;
         frob_g := FrobeniusNormalForm(g);
         s_g := Size(frob_g[3]);
         if s_g >= best_length then
+            known_As[i] := g;
+            known_Bs[i] := h;
             continue;
         fi;
-        h := op(known_Bs[i], known_Bs[j]);
         frob_h := FrobeniusNormalForm(h);
         s_h := Size(frob_h[3]);
         s := heuristic_for_length(s_g, s_h);
@@ -439,6 +463,7 @@ FORMS_FindCyclicElement := function(cent_rec)
             cent_rec.h := h;
             cent_rec.frob_g := frob_g;
             cent_rec.frob_h := frob_h;
+            best_length := s;
         fi;
         if s = heuristic_min then
             return;
@@ -455,18 +480,18 @@ FORMS_ComputeConditionMatrixForCent := function(cent_rec, vec, cur_a, cur_b)
     coeffs_c := vec * cur_a * cent_rec.frob_g_inverse_base;
     coeffs_f := vec * cent_rec.frob_g_inverse_base;
 
-    j := Size(cent_rec.frob_h[3]);
+    j := Size(cent_rec.frob_g[3]);
     Ps := ZeroMatrix(cent_rec.n*j, cent_rec.n, cur_a);
    
     for i in [1..j] do
         if i = j then
             b_end := cent_rec.n;
         else
-            b_end := cent_rec.frob_h[3][i + 1] - 1;
+            b_end := cent_rec.frob_g[3][i + 1] - 1;
         fi;
 
         mat := FORMS_EvaluatePolynomialWithFrobenius(
-            coeffs_c{[cent_rec.frob_h[3][i]..b_end]},
+            coeffs_c{[cent_rec.frob_g[3][i]..b_end]},
             cent_rec.h, 
             cent_rec.frob_h, 
             cent_rec.frob_h_inverse_base,
@@ -474,7 +499,7 @@ FORMS_ComputeConditionMatrixForCent := function(cent_rec, vec, cur_a, cur_b)
             cent_rec.n
         ) 
         - FORMS_EvaluatePolynomialWithFrobenius(
-            coeffs_f{[cent_rec.frob_h[3][i]..b_end]}, 
+            coeffs_f{[cent_rec.frob_g[3][i]..b_end]}, 
             cent_rec.h, 
             cent_rec.frob_h, 
             cent_rec.frob_h_inverse_base,
@@ -559,7 +584,11 @@ FORMS_ComputeCyclicMatCondition := function(cent_rec)
         nrrows := nrrows + NrRows(nspace);
         Add(outspaces, nspace);
     od;
-    nrpols := Size(cent_rec.frob_g);
+    # this is needed because once again no zero row Is8Bit and so on matrices are possible... It is also more efficient
+    if nrrows = 0 then
+        return [];
+    fi;
+    nrpols := Size(cent_rec.frob_g[3]);
     Ps := ZeroMatrix(nrrows,cent_rec.n * nrpols,cent_rec.g);
     accumulated_rows := 1;
     for i in [1..Size(outspaces)] do
@@ -567,6 +596,7 @@ FORMS_ComputeCyclicMatCondition := function(cent_rec)
         space_rows := NrRows(space);
         coll_index := ((i-1)*cent_rec.n) + 1;
         CopySubMatrix(space, Ps, [1..space_rows], [accumulated_rows..(accumulated_rows + space_rows - 1)], [1..cent_rec.n], [coll_index..coll_index + cent_rec.n - 1]);
+        accumulated_rows := accumulated_rows + space_rows;
     od;
     return Ps;
 end;
@@ -601,24 +631,33 @@ end;
 
 # given cent_rec which already should contain cyclic elements g, h in the matrix algebras <As> and <Bs> respectively computes the basis of the centralizing matrices. Also Size(As) = Size(Bs) > 1 should hold.
 FORMS_ComputeCentralizingSpace := function(cent_rec)
-    local old_kernel_size, stagnation, stagnation_max, i, j, cur_b, cur_a, vec, Conds, first, nspace, nspace_size, W, O, exit_loop;
+    local old_kernel_size, stagnation, stagnation_max, i, j, cur_b, cur_a, vec, Conds, first, nspace, nspace_size, W, O, exit_loop, index_order, k;
     first := true;
     exit_loop := false;
     old_kernel_size := cent_rec.n + 1;
     stagnation := 0;
     stagnation_max := 3; # test four matrices
-
-    for i in [1..cent_rec.d] do
+    index_order := Shuffle([1..cent_rec.n]);
+    # loop over vectors and then generators to hopefully avoid non constraining generators..
+    for j in index_order do
+        # random test vectors seem to be important especially if the generators As, Bs are very very nice...
+        vec := ZeroVector(cent_rec.n, cent_rec.g);
+        repeat 
+            for k in [1..cent_rec.n] do
+                vec[k] := Random(cent_rec.F);
+            od;
+        until not IsZero(vec);
+        # idk if random vectors are better... maybe..?
+        # vec := ZeroVector(cent_rec.n, cent_rec.g);
+        # vec[j] := One(cent_rec.F);
         if exit_loop then
             break;
         fi;
-        cur_a := cent_rec.As[i];
-        cur_b := cent_rec.Bs[i];
-        for j in [1..cent_rec.n] do
-            # vec := RandomVector(F, n); 
-            # idk if random vectors are better... maybe..?
-            vec := ZeroVector(cent_rec.n, cur_a);
-            vec[j] := One(cent_rec.F);
+        
+        for i in [1..cent_rec.d] do
+            cur_a := cent_rec.As[i];
+            cur_b := cent_rec.Bs[i];
+            
             Conds := FORMS_ComputeConditionMatrixForCent(cent_rec, vec, cur_a, cur_b);
             # In theory on the first run the cyclic case could be computed however this is slow, also intializing with W with identity matrices seems wasteful so i decided against it.
             if first then 
@@ -637,6 +676,10 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
                 W := nspace;
                 first := false;
             fi;
+            # Print(nspace_size);
+            # Print(", ");
+            # Print(Size(W));
+            # Print("\n");
             if nspace_size = 1 then
                 exit_loop := true; # exit both loops
                 break;
@@ -650,7 +693,7 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
             # try exit early
             if stagnation = stagnation_max then
                 stagnation := 0;
-                stagnation_max := stagnation_max * 2; # also a random heuristic by me idk if this is a good choice...
+                stagnation_max := Int(stagnation_max * 1.2); # also a random heuristic by me idk if this is a good choice...
                 O := FORMS_ReturnCent(cent_rec, true, W);
                 if O <> false then
                     return O;
@@ -661,7 +704,11 @@ FORMS_ComputeCentralizingSpace := function(cent_rec)
     
     O := FORMS_ReturnCent(cent_rec, true, W);
     if O = false then
+        # Print("we are here... :(");
         Conds := FORMS_ComputeCyclicMatCondition(cent_rec);
+        if Conds = [] then  
+            return [];
+        fi;
         W := FORMS_IntersectVectorSpaces(Conds, W);
         O := FORMS_ReturnCent(cent_rec, false, W);
         # TODO: one could also do this always instead of checking if forms are preserved however this seems slower. Testing should be done tho, to make sure. 
@@ -685,6 +732,11 @@ FORMS_BuildCentRecord := function(As, Bs, F)
         cent_rec.frob_h := FrobeniusNormalForm(cent_rec.h);
     else
         FORMS_FindCyclicElement(cent_rec);
+        # Print("frob bases sizes: ");
+        # Print(Size(cent_rec.frob_g[1]));
+        # Print(",");
+        # Print(Size(cent_rec.frob_h[1]));
+        # Print("\n");
     fi;
     cent_rec.frob_g_inverse_base := Inverse(cent_rec.frob_g[2]);
     cent_rec.frob_h_inverse_base := Inverse(cent_rec.frob_h[2]);
