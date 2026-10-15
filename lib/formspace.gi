@@ -528,13 +528,14 @@ end;
 FORMS_IntersectVectorSpaces := function(A, B)
     local sol;
     sol := SumIntersectionMat(A, B)[2];
-    if s = [] then
+    if sol = [] then
         # TODO change this if zero row representatinos are allowed.
         if IsGF2MatrixRep(A) or Is8BitMatrixRep(A) then
             return ZeroMatrix(IsPlistRep, DefaultFieldOfMatrix(A), 0, NrCols(A));
         else
             return ZeroMatrix(0, NrCols(A), A);
         fi;
+    fi;
     return Matrix(sol, A);
 end;
 
@@ -698,7 +699,7 @@ FORMS_ComputeCentralizingSpaceOp := function(cent_rec)
     fi;
 end;
 # Given As, Bs, this computes a basis of matrices C, such that As_i * C = C * Bs_i. If one chooses As = Bs then this computes the regular centralizer. As far as i know there is a method for this in work by alia i am not sure but have talked about this with her and we have decided that it might be worth it for me to try to implement it anyways.
-ComputeCentralizingSpace := function(As, Bs, F)
+ComputeMatrixIntertwiners := function(As, Bs, F)
     local cent_rec;
     if Size(As) = 0 and Size(Bs) = 0 then
         # Could also return a full basis here... what to do...
