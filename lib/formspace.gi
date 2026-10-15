@@ -524,9 +524,17 @@ FORMS_ReturnCent := function(cent_rec, needs_checking, W)
 end;
 
 # A, B must be matrices with the same number of collumns and over the same field. Their rows span the two vectorspaces. The output of this is another matrix, and its rows are the basis of the intersection.
+# I expect this function to pretty much never be called, so it might have bugs...
 FORMS_IntersectVectorSpaces := function(A, B)
     local sol;
     sol := SumIntersectionMat(A, B)[2];
+    if s = [] then
+        # TODO change this if zero row representatinos are allowed.
+        if IsGF2MatrixRep(A) or Is8BitMatrixRep(A) then
+            return ZeroMatrix(IsPlistRep, DefaultFieldOfMatrix(A), 0, NrCols(A));
+        else
+            return ZeroMatrix(0, NrCols(A), A);
+        fi;
     return Matrix(sol, A);
 end;
 
