@@ -377,10 +377,34 @@ FORMS_FilterUnitaryForms := function(Forms, F, n, hom)
     return out;
 end;
 
+# Returns the [[Minimal Polynomial of A]] or FrobeniusNormalForm(A) if A was cyclic and the matrix representation is suitable. This function mostly exists because i found that MinimalPolynomial is slower than the Nofoma function MaximalVector in some cases. However if the matrix is not compressed this function is horribly slow. This should maybe also be an issue on the nofoma package i am however not sure how big the difference is between the algorithms they use...
+FORMS_MinimalPolynomial := function(A)
+    local v, M, n, i;
+    if Is8BitMatrixRep(A) or IsGF2MatrixRep(A) then
+        v := MaximalVectorMat(A);
+        n := NrRows(A);
+        if Degree(v[2]) = n then
+            # cyclic, use v to compute frobenius normal form right here instead of repeating this computation...
+            M := ZeroMatrix(n, n, A);
+            M[1] := v[1];
+            for i in [2..n] do
+                M[i] := M[i-1]*A;
+            od;
+            return [[v[2]], M, [1]]; # matches output of FrobeniusNormalForm 
+        fi;
+        return [[v[2]]];
+    fi;
+    return [[MinimalPolynomial(A)]];
+end;
+
 # This function tries to find matrices A in <As>, B in <Bs> such that both are ideally cyclic or have very few blocks in ther frobenius normal form.
 ## TODO: maybe add extra function if for the As, Bs one being cyclic is equivalent to the other being cyclic/if their block lengths are the same. However i am not sure this will actually make the funciton meaningfully faster...
+# This function can also determine that it is imposible to find intertwiners. Namely if g and h are two elements that correspond to each other, iff gcd(g, h) = 1, then no intertwiner can exist. This was pointed out to me by Claude AI but seems to be a known result. The meataxe also seems to do something similar to this
+# Here is a sketch proof for one direction. Assume gcd(g, h) = 1 and there is a C such that gC = Ch. Because of gcd = 1, bezout gives a, b such that the minimal polynomials of g, h named f_g, f_h satisfy f_ga + f_hb = 1. Now, we have 0 = f_g(g)C = Cf_h(g) = C(f_g(g)a(g) - 1) = -C 
+# The other dirction of this also seems to be true. i.e. there is not intertwiner implies gcd = 1...
+# This result might also be usefull when trying to compute all scalars of forms (including degenerate forms). Another result in that direction is that for a cyclic matrix g the matrix intertwiners are polynomials in g. This is proven in "Cyclic Matrices Over Finite Fields" by Peter Neumann and Cheryl Praeger
 FORMS_FindCyclicElement := function(cent_rec)
-    local runs_max, best_length, r, known_As, known_Bs, interval, i, j, op_code, op, add, mult, g, h, frob_g, frob_h, s_g, s_h, s, heuristic_min, heuristic_for_length, deg, do_not_use;
+    local runs_max, best_length, r, known_As, known_Bs, interval, i, j, op_code, op, add, mult, g, h, frob_g, frob_h, s_g, s_h, s, deg, do_not_use, fg, fh, do_skip;
 
     if cent_rec.d = 1 then
         ## should never happen, always run special case made for cyclic case.
@@ -388,14 +412,6 @@ FORMS_FindCyclicElement := function(cent_rec)
     fi;
 
     runs_max := 3*cent_rec.d + 10;
-    # this function is used to evaluate how good a candidate is. Lower is better. TODO: experiment here with different weights for the parameters a and b or maybe non linear function. Does this even matter a lot?? maybe not
-    # a low means that the number of indeterminants in the system of equations is small
-    # b low means we can quickly compute the systems of equations that we want to solve (quick polynomial evaluation)
-    # Ideal is a = b = 1 i.e. we have cyclic element in both. 
-    heuristic_for_length := function(a, b)
-        return a + b;
-    end;
-    heuristic_min := heuristic_for_length(1, 1);
     add := function(a, b)
         return a + b;
     end;
@@ -403,9 +419,10 @@ FORMS_FindCyclicElement := function(cent_rec)
         return a * b;
     end;
 
-    best_length := heuristic_for_length(cent_rec.n, cent_rec.n) * 2; ## start at "infinity"
+    best_length := infinity; ## start at "infinity"
 
-    # TODO: not sure yet if ShallowCopy is needed here.
+    # do copy and not override knows As/Bs. 
+    # TODO. for now the known lists are always the length of the number of given generators. It might also be good to in the beginning add a few extra to the list...?
     known_As := ShallowCopy(cent_rec.As);
     known_Bs := ShallowCopy(cent_rec.Bs);
     
@@ -415,8 +432,8 @@ FORMS_FindCyclicElement := function(cent_rec)
         interval := [1..cent_rec.d];
         Remove(interval, i);
         j := PseudoRandom(interval);
-        op_code := PseudoRandom([1..10]);
-        # TODO: maybe add inverse, minus?, random scaling with root of unity? adding seems to make this function work more poorly
+        # op_code := PseudoRandom([1..10]);
+        # TODO: maybe add inverse, minus?, random scaling with root of unity? allowing addition seems to not be very helpfull in finding cyclic elements..
         # if op_code in [1..9] then
         #     op := mult;
         # fi;
@@ -424,40 +441,75 @@ FORMS_FindCyclicElement := function(cent_rec)
         #     op := add;
         # fi;
         op := mult;
-        g := op(known_As[i],known_As[j]);
-       
-       
-        #TODO: ideally this would be done in the formspackage to not waste this nice maximal vector in case it is good. This is another heuristic, where only consider matrices that seem promising, having a maximal vector with at least one large block each. 
 
-        deg := Degree(MaximalVectorMat(g)[2]);
-        if IsBound(cent_rec.frob_g) and deg > Degree(cent_rec.frob_g[1][1]) then
-            do_not_use := true;
-        elif not IsBound(cent_rec.frob_g) and deg < Int(cent_rec.n/2) then
-            do_not_use := true;
+        # this function returns true if the g or h should be skipped based on a heuristic that tries to find cyclic elements. Namely if the minimal polynomial of the matrix only spins up a pretty small space or if the degree of the minimal polynomial has not decreased. This seems to be a good heuristic for quickly finding cyclic elements. 
+        do_skip := function(deg, check_g)
+            if check_g then
+                if IsBound(cent_rec.frob_g) and deg < Degree(cent_rec.frob_g[1][1]) then
+                    return true;
+                elif not IsBound(cent_rec.frob_g) and deg < Int(cent_rec.n/2) then
+                    return true;
+                fi;
+            else
+                if IsBound(cent_rec.frob_h) and deg < Degree(cent_rec.frob_h[1][1]) then
+                    return true;
+                elif not IsBound(cent_rec.frob_h) and deg < Int(cent_rec.n/2) then
+                    return true;
+                fi;
+            fi;                
+            return false;
+        end;
+
+        # compute the gcd condition on the first few runs, instead of rejecting early.. TODO: also 6 is a random number i chose..
+        if r < 6 then
+            g := op(known_As[i],known_As[j]);
+            h := op(known_Bs[i], known_Bs[j]);
+            fg := FORMS_MinimalPolynomial(g);
+            fh := FORMS_MinimalPolynomial(h);
+            # gcd = 1
+            if Degree(Gcd(fg[1][1], fh[1][1])) = 0 then
+                return false;
+            fi;
+            do_not_use := do_not_use or do_skip(Degree(fg[1][1]), true) or do_skip(Degree(fh[1][1]), false);
+        else
+            g := op(known_As[i],known_As[j]);
+            h := op(known_Bs[i], known_Bs[j]);
+            fg := FORMS_MinimalPolynomial(g);
+            do_not_use := do_not_use or do_skip(Degree(fg[1][1]), true);
+            if not do_not_use then
+                fh := FORMS_MinimalPolynomial(h);
+                do_not_use := do_not_use or do_skip(Degree(fh[1][1]), false);
+                # gcd = 1
+                if Degree(Gcd(fg[1][1], fh[1][1])) = 0 then
+                    return false;
+                fi;
+            fi;
         fi;
-        h := op(known_Bs[i], known_Bs[j]);
-        deg := Degree(MaximalVectorMat(h)[2]);
-        if IsBound(cent_rec.frob_h) and deg > Degree(cent_rec.frob_h[1][1]) then
-            do_not_use := true;
-        elif not IsBound(cent_rec.frob_h) and deg < Int(cent_rec.n/2) then
-            do_not_use := true;
-        fi;
-        h := op(known_Bs[i], known_Bs[j]);
+        
         if do_not_use then
             known_As[i] := g;
             known_Bs[i] := h;
             continue;
         fi;
-        frob_g := FrobeniusNormalForm(g);
+
+        if Size(fg) = 3 then
+            frob_g := fg;
+        else 
+            frob_g := FrobeniusNormalForm(g);
+        fi;
         s_g := Size(frob_g[3]);
-        if s_g >= best_length then
+        if s_g >= best_length + 1 then
             known_As[i] := g;
             known_Bs[i] := h;
             continue;
         fi;
-        frob_h := FrobeniusNormalForm(h);
+        if Size(fh) = 3 then
+            frob_h := fh;
+        else
+            frob_h := FrobeniusNormalForm(h);
+        fi;
         s_h := Size(frob_h[3]);
-        s := heuristic_for_length(s_g, s_h);
+        s := s_g + s_h;
         if s < best_length then
             cent_rec.g := g;
             cent_rec.h := h;
@@ -465,12 +517,22 @@ FORMS_FindCyclicElement := function(cent_rec)
             cent_rec.frob_h := frob_h;
             best_length := s;
         fi;
-        if s = heuristic_min then
-            return;
+        # TODO: maybe make this exit a bit more forgiving, dont just exit early on two cyclic matrices but rather two matrices with very few blocks. This should probably be an equation in n and r?
+        if s = 2 then
+            return true;
         fi;
         known_As[i] := g;
         known_Bs[i] := h;
     od;
+
+    # Here we have gotten unlucky and our heurstics have rejected all the elements we tested. I expect this to pretty much never happen.. Maybe something special should happen in this case like calling the MeatAxe function MTX.BasisModuleHomomorphisms as it is not so reliant on finding a good element. Maybe this is a TODO? Anyways, for now just take the last elements. 
+    if not IsBound(cent_rec.frob_g) then
+        cent_rec.g := g;
+        cent_rec.h := h;
+        cent_rec.frob_g := FrobeniusNormalForm(g);
+        cent_rec.frob_h := FrobeniusNormalForm(h);
+    fi;
+    return true;
 end;
 
 # TODO: idk how to document this it would require a long text...
@@ -724,14 +786,24 @@ FORMS_BuildCentRecord := function(As, Bs, F)
         return;
     fi;
     # TODO: check if fields line up?
-    cent_rec := rec(As := As, Bs := Bs, F := F, n := NrRows(As[1]), d := d);
+
+    # If exit_early is true, the function will return an empty space.
+    cent_rec := rec(As := As, Bs := Bs, F := F, n := NrRows(As[1]), d := d, exit_early := false);
     if d = 1 then   
         cent_rec.g := cent_rec.As[1];
         cent_rec.h := cent_rec.Bs[1];
         cent_rec.frob_g := FrobeniusNormalForm(cent_rec.g);
         cent_rec.frob_h := FrobeniusNormalForm(cent_rec.h);
+        # gcd early exit condition. TODO: maybe call MinimalPolynomial for this check as it is faster than FrobeniusNormalForm. Idk how often this case will happen...
+        if Degree(Gcd(cent_rec.frob_g[1][1], cent_rec.frob_h[1][1])) = 0 then
+            cent_rec.exit_early := true;
+        fi;
     else
-        FORMS_FindCyclicElement(cent_rec);
+        #exit early on GCD condition.
+        if not FORMS_FindCyclicElement(cent_rec) then
+            cent_rec.exit_early := true;
+            return cent_rec; # we do not have to compute the frobenius base inverses and stuff as we exit early.
+        fi;
         # Print("frob bases sizes: ");
         # Print(Size(cent_rec.frob_g[1]));
         # Print(",");
@@ -743,7 +815,11 @@ FORMS_BuildCentRecord := function(As, Bs, F)
     return cent_rec;
 end;
 
+# All functions that want to compute the intertwiner should run through this
 FORMS_ComputeCentralizingSpaceOp := function(cent_rec)
+    if IsBound(cent_rec.exit_early) and cent_rec.exit_early then
+        return [];
+    fi;
     if cent_rec.d = 1 then   
         return FORMS_CentralizerCyclicCase(cent_rec);
     else
@@ -751,16 +827,27 @@ FORMS_ComputeCentralizingSpaceOp := function(cent_rec)
     fi;
 end;
 # Given As, Bs, this computes a basis of matrices C, such that As_i * C = C * Bs_i. If one chooses As = Bs then this computes the regular centralizer. As far as i know there is a method for this in work by alia i am not sure but have talked about this with her and we have decided that it might be worth it for me to try to implement it anyways.
-ComputeMatrixIntertwiners := function(As, Bs, F)
-    local cent_rec;
-    if Size(As) = 0 and Size(Bs) = 0 then
-        # Could also return a full basis here... what to do...
-        Error("At least one generator must be given\n");
-        return;
-    fi;
-    cent_rec := FORMS_BuildCentRecord(As, Bs, F);
-    return FORMS_ComputeCentralizingSpaceOp(cent_rec);
-end;
+
+#! @Arguments As, Bs, F
+#! @Returns a basis of $\{C \in <A>F</A>^{n\times n} \mid <A>As[i]</A>C = C<A>Bs[i]</A> \forall 1\leq i \leq <A>Size(As)</A>\}$
+#! @Description
+#!  <A>As</A> and <A>Bs</A> are two lists with the same number of square $n \times n$ matrices over the field <A>F</A>.
+InstallMethod(MatrixIntertwiners, "for two lists of square matrices and the field they are defined over", [IsList, IsList, IsField], 
+    function(As, Bs, F)
+        local cent_rec;
+        if Size(As) = 0 and Size(Bs) = 0 then
+            # Could also return a full basis here... what to do...
+            Error("At least one generator must be given\n");
+            return;
+        fi;
+        if NrRows(As[1]) <> NrCols(As[1]) or NrRows(Bs[1]) <> NrCols(Bs[1]) or NrRows(As[1]) <> NrRows(Bs[1]) then
+            Error("The given matrices must be square and of the same size");
+            return;
+        fi;
+        cent_rec := FORMS_BuildCentRecord(As, Bs, F);
+        return FORMS_ComputeCentralizingSpaceOp(cent_rec);
+    end
+);
 
 # ideas for scalars : 
 ## non-degenerate 
