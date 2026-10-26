@@ -26,3 +26,4 @@ profiling
 benchmark.csv
 benchmark_old.csv
 bench_intertwiners.g
+intertwiners_benchmark.csv
